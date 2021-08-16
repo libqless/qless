@@ -34,7 +34,7 @@ module Qless
         number.times.map do |i|
           client = instance_double('Redis::Client')
           client.stub(:reconnect) { events << :"reconnect_#{i}" }
-          instance_double('Redis', client: client)
+          instance_double('Redis', _client: client)
         end
       end
 

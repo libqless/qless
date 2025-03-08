@@ -9,24 +9,24 @@ module Qless
       thread.join(0.1)
     end
 
-    def stop_worker_after(worker, &block)
+    def stop_worker_after(worker)
       yield
     ensure
       worker.stop!
     end
 
     # Run only the given number of jobs, then stop
-    def run_jobs(worker, count)
-      worker.extend Module.new {
+    def run_jobs(worker, count, &block)
+      worker.extend(Module.new do
         define_method(:jobs) do
           base_enum = super()
           Enumerator.new do |enum|
             count.times { enum << base_enum.next }
           end
         end
-      }
+      end)
 
-      thread = Thread.start { yield } if block_given?
+      thread = Thread.start(&block) if block_given?
       thread.abort_on_exception if thread
       worker.run
     ensure
@@ -36,7 +36,7 @@ module Qless
     # Runs the worker until it has no more jobs to process,
     # effectively drainig its queues.
     def drain_worker_queues(worker)
-      worker.extend Module.new {
+      worker.extend(Module.new do
         # For the child: stop as soon as it can't pop more jobs.
         def no_job_available
           shutdown
@@ -47,7 +47,7 @@ module Qless
         def spawn_replacement_child(*)
           shutdown
         end
-      }
+      end)
 
       worker.run
     end

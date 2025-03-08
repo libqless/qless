@@ -1,5 +1,3 @@
-# Encoding: utf-8
-
 require 'spec_helper'
 require 'qless/queue'
 require 'qless/job_reservers/round_robin'
@@ -43,7 +41,8 @@ module Qless
 
         it 'returns a useful human readable string' do
           reserver.description.should eq(
-            'Queue1, Queue2, Queue3 (round robin)')
+            'Queue1, Queue2, Queue3 (round robin)'
+          )
         end
       end
 

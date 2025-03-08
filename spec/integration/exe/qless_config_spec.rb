@@ -1,5 +1,3 @@
-# Encoding: utf-8
-
 require 'json'
 require 'tempfile'
 
@@ -13,9 +11,9 @@ describe 'qless-config', :integration do
       'application' => 'qless',
       'grace-period' => 10,
       'stats-history' => 30,
-      'jobs-history' => 604800,
+      'jobs-history' => 604_800,
       'heartbeat' => 60,
-      'jobs-history-count' => 50000,
+      'jobs-history-count' => 50_000,
       'histogram-history' => 7
     }
   end
@@ -37,7 +35,7 @@ describe 'qless-config', :integration do
   end
 
   it 'runs load' do
-    options_fixture(:foo => 'bar') do |path|
+    options_fixture(foo: 'bar') do |path|
       run('load', path)
     end
     expect(client.config['foo']).to eq('bar')

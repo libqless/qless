@@ -1,5 +1,3 @@
-# Encoding: utf-8
-
 module Qless
   module Middleware
     # A module for reconnecting to redis for each job
@@ -11,7 +9,7 @@ module Qless
           end
           define_singleton_method(:inspect, method(:to_s))
 
-          block ||= ->(job) { redis_connections }
+          block ||= ->(_job) { redis_connections }
 
           define_method :around_perform do |job|
             Array(block.call(job)).each do |redis|

@@ -1,5 +1,3 @@
-# Encoding: utf-8
-
 # The things we're testing
 require 'qless'
 
@@ -34,7 +32,7 @@ module Qless
         worker_name: '',
         retries_left: 3,
         dependencies: [],
-        original_retries: 3,
+        original_retries: 3
       }
       expected.each do |key, value|
         expect(job.send(key)).to eq(value)
@@ -120,9 +118,9 @@ module Qless
       job = client.jobs['the-jid']
       client.jobs['the-jid'].cancel # cancel a different instance that represents the same job
 
-      expect {
+      expect do
         job.requeue('bar')
-      }.to raise_error(/job the-jid does not exist/i)
+      end.to raise_error(/job the-jid does not exist/i)
 
       expect(client.jobs['jid']).to be_nil
     end
@@ -169,7 +167,7 @@ module Qless
       queue.put('Foo', {}, jid: 'c', depends: ['a'])
       expect(client.jobs['c'].dependencies).to eq(['a'])
       client.jobs['c'].depend('b')
-      expect(client.jobs['c'].dependencies).to match_array(%w{a b})
+      expect(client.jobs['c'].dependencies).to match_array(%w[a b])
       client.jobs['c'].undepend('a')
       expect(client.jobs['c'].dependencies).to eq(['b'])
     end
@@ -182,7 +180,8 @@ module Qless
     it 'has a reasonable to_s' do
       queue.put('Foo', {}, jid: 'jid')
       expect(client.jobs['jid'].to_s).to eq(
-        '<Qless::Job Foo (jid / foo / waiting)>')
+        '<Qless::Job Foo (jid / foo / waiting)>'
+      )
     end
 
     it 'fails to process if it does not have the method' do
@@ -229,7 +228,7 @@ module Qless
       queue.put('Foo', {}, jid: 'jid')
       # Both with and without data
       client.jobs['jid'].log('hello')
-      client.jobs['jid'].log('hello', { foo: 'bar'} )
+      client.jobs['jid'].log('hello', { foo: 'bar' })
       history = client.jobs['jid'].raw_queue_history
       expect(history[1]['what']).to eq('hello')
       expect(history[2]['foo']).to eq('bar')
@@ -258,19 +257,19 @@ module Qless
 
     it 'has all the expected attributes' do
       queue.recur('Foo', { whiz: 'bang' }, 60, jid: 'jid', tags: ['foo'],
-                  retries: 3)
+                                               retries: 3)
       job = client.jobs['jid']
       expected = {
-        :jid        => 'jid',
-        :data       => {'whiz' => 'bang'},
-        :tags       => ['foo'],
-        :count      => 0,
-        :backlog    => 0,
-        :retries    => 3,
-        :interval   => 60,
-        :priority   => 0,
-        :queue_name => 'foo',
-        :klass_name => 'Foo'
+        jid: 'jid',
+        data: { 'whiz' => 'bang' },
+        tags: ['foo'],
+        count: 0,
+        backlog: 0,
+        retries: 3,
+        interval: 60,
+        priority: 0,
+        queue_name: 'foo',
+        klass_name: 'Foo'
       }
       expected.each do |key, value|
         expect(job.send(key)).to eq(value)

@@ -1,5 +1,3 @@
-# Encoding: utf-8
-
 require 'spec_helper'
 require 'qless/job'
 
@@ -31,7 +29,7 @@ module Qless
       it 'round-trips data through JSON to mimic real jobs' do
         time = Time.new(2012, 5, 3, 12, 30)
         job = Job.build(client, JobClass, data: { a: 5, timestamp: time })
-        job.data.keys.should =~ %w[ a timestamp ]
+        job.data.keys.should =~ %w[a timestamp]
         job.data['timestamp'].should be_a(String)
         job.data['timestamp'].should include('2012-05-03')
       end
@@ -98,14 +96,14 @@ module Qless
         end
 
         expect(Qless::Job.middlewares_on(klass)).to eq([
-          SomeJobMiddleware, Qless::Job::SupportsMiddleware
-        ])
+                                                         SomeJobMiddleware, Qless::Job::SupportsMiddleware
+                                                       ])
       end
     end
 
     shared_examples_for 'a method that calls lua' do |error, method, *args|
       it "raises a #{error} if a lua error is raised" do
-        client.stub(:call) do |command, *a|
+        client.stub(:call) do |command, *_a|
           expect(command).to eq(method.to_s)
           raise LuaScriptError.new('failed')
         end
@@ -118,7 +116,7 @@ module Qless
       end
 
       it 'allows other errors to propagate' do
-        client.stub(:call) do |command, *a|
+        client.stub(:call) do |command, *_a|
           expect(command).to eq(method.to_s)
           raise NoMethodError
         end
@@ -142,12 +140,12 @@ module Qless
     end
 
     [
-     [:fail, 'group', 'message'],
-     [:complete],
-     [:cancel],
-     [:requeue, 'queue'],
-     [:retry],
-     [:retry, 55]
+      [:fail, 'group', 'message'],
+      [:complete],
+      [:cancel],
+      [:requeue, 'queue'],
+      [:retry],
+      [:retry, 55]
     ].each do |meth, *args|
       describe "##{meth}" do
         let(:job) { Job.build(client, JobClass) }
@@ -183,12 +181,12 @@ module Qless
           job.send(meth, *args)
 
           expect(events).to eq([
-            [:before_1, job],
-            [:before_2, job],
-            :lua_call,
-            [:after_2, job],
-            [:after_1, job]
-          ])
+                                 [:before_1, job],
+                                 [:before_2, job],
+                                 :lua_call,
+                                 [:after_2, job],
+                                 [:after_1, job]
+                               ])
         end
       end
     end
@@ -198,9 +196,9 @@ module Qless
         job = Job.build(client, JobClass, 'spawned_from_jid' => 'foo')
 
         expect(job.to_hash).to include(
-          klass_name: "Qless::JobClass",
-          state: "running",
-          spawned_from_jid: "foo"
+          klass_name: 'Qless::JobClass',
+          state: 'running',
+          spawned_from_jid: 'foo'
         )
       end
     end
@@ -228,9 +226,10 @@ module Qless
       let(:history_event) do
         {
           'popped' => time_2.to_i,
-          'put'    => time_1.to_f,
-          'q'      => 'test_error',
-          'worker' => 'Myrons-Macbook-Pro.local-44396' }
+          'put' => time_1.to_f,
+          'q' => 'test_error',
+          'worker' => 'Myrons-Macbook-Pro.local-44396'
+        }
       end
 
       let(:job) do
@@ -279,49 +278,49 @@ module Qless
       end
     end
 
-    describe "equality" do
+    describe 'equality' do
       it 'is considered equal when the qless client and jid are equal' do
-        job1 = Qless::Job.build(client, JobClass, jid: "foo")
-        job2 = Qless::Job.build(client, JobClass, jid: "foo")
+        job1 = Qless::Job.build(client, JobClass, jid: 'foo')
+        job2 = Qless::Job.build(client, JobClass, jid: 'foo')
 
         expect(job1 == job2).to eq(true)
         expect(job2 == job1).to eq(true)
-        expect(job1.eql? job2).to eq(true)
-        expect(job2.eql? job1).to eq(true)
+        expect(job1.eql?(job2)).to eq(true)
+        expect(job2.eql?(job1)).to eq(true)
 
         expect(job1.hash).to eq(job2.hash)
       end
 
       it 'is not considered equal when the jid differs' do
-        job1 = Qless::Job.build(client, JobClass, jid: "foo")
-        job2 = Qless::Job.build(client, JobClass, jid: "food")
+        job1 = Qless::Job.build(client, JobClass, jid: 'foo')
+        job2 = Qless::Job.build(client, JobClass, jid: 'food')
 
         expect(job1 == job2).to eq(false)
         expect(job2 == job1).to eq(false)
-        expect(job1.eql? job2).to eq(false)
-        expect(job2.eql? job1).to eq(false)
+        expect(job1.eql?(job2)).to eq(false)
+        expect(job2.eql?(job1)).to eq(false)
 
         expect(job1.hash).not_to eq(job2.hash)
       end
 
       it 'is not considered equal when the client differs' do
-        job1 = Qless::Job.build(client, JobClass, jid: "foo")
-        job2 = Qless::Job.build(double, JobClass, jid: "foo")
+        job1 = Qless::Job.build(client, JobClass, jid: 'foo')
+        job2 = Qless::Job.build(double, JobClass, jid: 'foo')
 
         expect(job1 == job2).to eq(false)
         expect(job2 == job1).to eq(false)
-        expect(job1.eql? job2).to eq(false)
-        expect(job2.eql? job1).to eq(false)
+        expect(job1.eql?(job2)).to eq(false)
+        expect(job2.eql?(job1)).to eq(false)
 
         expect(job1.hash).not_to eq(job2.hash)
       end
 
       it 'is not considered equal to other types of objects' do
-        job1 = Qless::Job.build(client, JobClass, jid: "foo")
-        job2 = Class.new(Qless::Job).build(client, JobClass, jid: "foo")
+        job1 = Qless::Job.build(client, JobClass, jid: 'foo')
+        job2 = Class.new(Qless::Job).build(client, JobClass, jid: 'foo')
 
         expect(job1 == job2).to eq(false)
-        expect(job1.eql? job2).to eq(false)
+        expect(job1.eql?(job2)).to eq(false)
         expect(job1.hash).not_to eq(job2.hash)
       end
     end

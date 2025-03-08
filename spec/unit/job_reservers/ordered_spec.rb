@@ -1,5 +1,3 @@
-# Encoding: utf-8
-
 require 'spec_helper'
 require 'qless/queue'
 require 'qless/job_reservers/ordered'

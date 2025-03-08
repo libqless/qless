@@ -1,5 +1,3 @@
-# Encoding: utf-8
-
 # Qless requires
 require 'qless'
 require 'qless/worker/base'

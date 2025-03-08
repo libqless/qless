@@ -1,5 +1,3 @@
-# Encoding: utf-8
-
 require 'spec_helper'
 require 'qless/middleware/retry_exceptions'
 require 'qless'
@@ -11,7 +9,7 @@ module Qless
         Class.new do
           attr_accessor :perform
 
-          def around_perform(job)
+          def around_perform(_job)
             perform.call
           end
         end
@@ -45,18 +43,20 @@ module Qless
       describe '.use_on_retry_callback' do
         it 'uses a default callback if none is given' do
           expect(container.on_retry_callback).to eq(
-            RetryExceptions::DEFAULT_ON_RETRY_CALLBACK)
+            RetryExceptions::DEFAULT_ON_RETRY_CALLBACK
+          )
         end
 
         it 'accepts a block to set an after retry callback' do
           container.use_on_retry_callback { |*| true }
           expect(container.on_retry_callback).not_to eq(
-            RetryExceptions::DEFAULT_ON_RETRY_CALLBACK)
+            RetryExceptions::DEFAULT_ON_RETRY_CALLBACK
+          )
         end
       end
 
       context 'when no exception is raised' do
-        before { container.perform = -> { } }
+        before { container.perform = -> {} }
 
         it 'does not retry the job' do
           job.should_not_receive(:retry)
@@ -100,7 +100,8 @@ module Qless
           job.should_receive(:retry).with(
             anything,
             "JobClass:#{matched_exception.name}",
-            /#{File.basename __FILE__}:#{raise_line}/)
+            /#{File.basename __FILE__}:#{raise_line}/
+          )
           perform
         end
 
@@ -122,9 +123,9 @@ module Qless
           before { add_retry_callback }
 
           it 'calls the callback' do
-            expect {
+            expect do
               perform
-            }.to change { callback_catcher.size }.from(0).to(1)
+            end.to change { callback_catcher.size }.from(0).to(1)
           end
         end
 

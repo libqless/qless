@@ -1,5 +1,3 @@
-# Encoding: utf-8
-
 begin
   # use `bundle install --standalone' to get this...
   require_relative '../bundle/bundler/setup'
@@ -39,15 +37,17 @@ module RedisHelpers
 
   def redis_config
     return @redis_config unless @redis_config.nil?
-    if File.exist?('./spec/redis.config.yml')
-      @redis_config = YAML.load_file('./spec/redis.config.yml')
-    else
-      @redis_config = {}
-    end
+
+    @redis_config = if File.exist?('./spec/redis.config.yml')
+                      YAML.load_file('./spec/redis.config.yml')
+                    else
+                      {}
+                    end
   end
 
   def redis_url
     return 'redis://localhost:6379/0' if redis_config.empty?
+
     c = redis_config
     "redis://#{c[:host]}:#{c[:port]}/#{c.fetch(:db, 0)}"
   end
@@ -73,9 +73,11 @@ RSpec.configure do |c|
   c.include RSpec::Fire
   c.include QlessSpecHelpers
 
-  c.before(:each, :js) do
-    pending 'Skipping JS test because JS tests have been flaky on Travis.'
-  end if ENV['TRAVIS']
+  if ENV['TRAVIS']
+    c.before(:each, :js) do
+      pending 'Skipping JS test because JS tests have been flaky on Travis.'
+    end
+  end
 end
 
 using_integration_context = false
@@ -96,7 +98,9 @@ RSpec.configure do |c|
   c.before(:suite) do
     if using_integration_context && RedisHelpers.new_redis.keys('*').any?
       config = RedisHelpers.redis_config
-      command = "redis-cli -h #{config.fetch(:host, "127.0.0.1")} -p #{config.fetch(:port, 6379)} -n #{config.fetch(:db, 0)} flushdb"
+      command = "redis-cli -h #{config.fetch(:host,
+                                             '127.0.0.1')} -p #{config.fetch(:port,
+                                                                             6379)} -n #{config.fetch(:db, 0)} flushdb"
       msg = "Aborting since there are keys in your Redis DB and we don't want to accidentally clear data you may care about."
       msg << "  To clear your DB, run: `#{command}`"
       raise msg

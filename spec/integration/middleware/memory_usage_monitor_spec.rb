@@ -5,11 +5,11 @@ require 'qless/middleware/memory_usage_monitor'
 module Qless
   module Middleware
     describe MemoryUsageMonitor do
-      include_context "forking worker"
+      include_context 'forking worker'
 
       mem_usage_from_other_technique = nil
 
-      shared_examples_for "memory usage monitor" do
+      shared_examples_for 'memory usage monitor' do
         it 'can report the amount of memory the process is using' do
           mem = MemoryUsageMonitor.current_usage_in_kb
 
@@ -57,7 +57,7 @@ module Qless
           failing_job_class = Class.new do
             def self.perform(job)
               job.client.redis.rpush('pid', Process.pid)
-              raise "boom"
+              raise 'boom'
             end
           end
 
@@ -82,7 +82,7 @@ module Qless
           bloated_job_class = Class.new do
             def self.perform(job)
               job_record = JobRecord.new(Process.pid, Qless::Middleware::MemoryUsageMonitor.current_usage_in_kb, nil)
-              job_record.after_mem = bloat_memory(job_record.before_mem, job.data.fetch("target"))
+              job_record.after_mem = bloat_memory(job_record.before_mem, job.data.fetch('target'))
 
               # publish what the memory usage was before/after
               job.client.redis.rpush('mem_usage', Marshal.dump(job_record))
@@ -114,29 +114,27 @@ module Qless
             end
           end
 
-          stub_const("JobRecord", Struct.new(:pid, :before_mem, :after_mem))
+          stub_const('JobRecord', Struct.new(:pid, :before_mem, :after_mem))
 
           stub_const('BloatedJobClass', bloated_job_class)
         end
       end
 
-      context "when the rusage gem is available" do
-        it_behaves_like "memory usage monitor" do
+      context 'when the rusage gem is available' do
+        it_behaves_like 'memory usage monitor' do
           before do
-            load "qless/middleware/memory_usage_monitor.rb"
+            load 'qless/middleware/memory_usage_monitor.rb'
 
-            unless Process.respond_to?(:rusage)
-              pending "Could not load the rusage gem"
-            end
+            pending 'Could not load the rusage gem' unless Process.respond_to?(:rusage)
           end
         end
 
-        let(:memory_kb_according_to_ps) { MemoryUsageMonitor::SHELL_OUT_FOR_MEMORY.() }
+        let(:memory_kb_according_to_ps) { MemoryUsageMonitor::SHELL_OUT_FOR_MEMORY.call }
 
-        context "when rusage returns memory in KB (commonly on Linux)" do
+        context 'when rusage returns memory in KB (commonly on Linux)' do
           before do
             Process.stub(:rusage) { double(maxrss: memory_kb_according_to_ps) }
-            load "qless/middleware/memory_usage_monitor.rb"
+            load 'qless/middleware/memory_usage_monitor.rb'
           end
 
           it 'returns the memory in KB' do
@@ -144,10 +142,10 @@ module Qless
           end
         end
 
-        context "when rusage returns memory in bytes (commonly on OS X)" do
+        context 'when rusage returns memory in bytes (commonly on OS X)' do
           before do
             Process.stub(:rusage) { double(maxrss: memory_kb_according_to_ps * 1024) }
-            load "qless/middleware/memory_usage_monitor.rb"
+            load 'qless/middleware/memory_usage_monitor.rb'
           end
 
           it 'returns the memory in KB' do
@@ -156,16 +154,15 @@ module Qless
         end
       end
 
-      context "when the rusage gem is not available" do
-        it_behaves_like "memory usage monitor" do
+      context 'when the rusage gem is not available' do
+        it_behaves_like 'memory usage monitor' do
           before do
             MemoryUsageMonitor.stub(:warn)
             MemoryUsageMonitor.stub(:require).and_raise(LoadError)
-            load "qless/middleware/memory_usage_monitor.rb"
+            load 'qless/middleware/memory_usage_monitor.rb'
           end
         end
       end
     end
   end
 end
-

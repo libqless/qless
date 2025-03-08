@@ -1,12 +1,9 @@
-# Encoding: utf-8
-
 # This middleware is now a no-op because
 # the metriks dependency breaks builds.
 
 module Qless
   module Middleware
     module Metriks
-
       # Tracks the time jobs take, grouping the timings by the job class.
       module TimeJobsByClass
         def around_perform(job)
@@ -26,7 +23,7 @@ module Qless
       #   )
       # end
       class CountEvents < Module
-        def initialize(class_to_event_map)
+        def initialize(_class_to_event_map)
           module_eval do # eval the block within the module instance
             define_method :around_perform do |job|
               super(job)

@@ -1,5 +1,3 @@
-# Encoding: utf-8
-
 require 'socket'
 require 'redis'
 require 'json'
@@ -29,11 +27,12 @@ require 'qless/failure_formatter'
 
 # monkey patch redis class to support gem version 3 and 4
 class Redis
-
   # in redis 4.0.0 the client command was introduced which overrides access to @client
-  def _client
-    @client
-  end unless method_defined?(:_client)
+  unless method_defined?(:_client)
+    def _client
+      @client
+    end
+  end
 end
 
 # The top level container for all things qless
@@ -81,13 +80,11 @@ module Qless
     end
 
     def failed(t = nil, start = 0, limit = 25)
-      if !t
-        return JSON.parse(@client.call('failed'))
-      else
-        results = JSON.parse(@client.call('failed', t, start, limit))
-        results['jobs'] = multiget(*results['jobs'])
-        results
-      end
+      return JSON.parse(@client.call('failed')) unless t
+
+      results = JSON.parse(@client.call('failed', t, start, limit))
+      results['jobs'] = multiget(*results['jobs'])
+      results
     end
 
     def [](id)
@@ -99,6 +96,7 @@ module Qless
       if results.nil?
         results = @client.call('recur.get', jid)
         return nil if results.nil?
+
         return RecurringJob.new(@client, JSON.parse(results))
       end
       Job.new(@client, JSON.parse(results))
@@ -147,7 +145,7 @@ module Qless
   # A class for interacting with events. Not meant to be instantiated directly,
   # it's accessed through Client#events
   class ClientEvents
-    EVENTS = %w{canceled completed failed popped stalled put track untrack}
+    EVENTS = %w[canceled completed failed popped stalled put track untrack]
     EVENTS.each do |method|
       define_method(method.to_sym) do |&block|
         @actions[method.to_sym] = block
@@ -211,17 +209,15 @@ module Qless
       @_qless.call(command, Time.now.to_f, *argv)
     end
 
-    def unfail(destqueue, group, batch_size=100)
+    def unfail(destqueue, group, batch_size = 100)
       call('unfail', destqueue, group, batch_size)
     end
 
-    def unfail_all!(batch_size=10000, debug=false)
+    def unfail_all!(batch_size = 10_000, debug = false)
       jobs.failed.each do |group, kount|
         destqueue = jobs.failed(group, 0, 1)['jobs'][0].queue.name
         kount = (kount.to_f / batch_size).ceil.to_i
-        if debug
-          puts "#{kount}.times { call('unfail', #{destqueue.inspect}, #{group.inspect}, #{batch_size.inspect}) }"
-        end
+        puts "#{kount}.times { call('unfail', #{destqueue.inspect}, #{group.inspect}, #{batch_size.inspect}) }" if debug
         kount.times { unfail(destqueue, group, batch_size) }
       end
     end
@@ -265,7 +261,7 @@ module Qless
       self.class.hash ^ redis.id.hash
     end
 
-  private
+    private
 
     def assert_minimum_redis_version(version)
       # remove the "-pre2" from "2.6.8-pre2"

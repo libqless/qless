@@ -1,5 +1,3 @@
-# Encoding: utf-8
-
 # The things we're testing
 require 'qless'
 
@@ -27,8 +25,8 @@ module Qless
       Thread.new do
         pubsub.events.listen do |on|
           # Listen for each event, and put the message into the queue
-          [:canceled, :completed, :failed,
-            :popped, :put, :stalled, :track, :untrack].each do |event|
+          %i[canceled completed failed
+             popped put stalled track untrack].each do |event|
             on.send(event) do |jid|
               events[event.to_s] << jid
             end

@@ -11,5 +11,5 @@ client = Qless::Client.new
 QlessWebDevHelper.create_mock_jobs(client)
 
 Vegas::Runner.new(Qless::Server.new(client), 'qless-web', {
-  foreground: true
-})
+                    foreground: true
+                  })

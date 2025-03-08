@@ -1,5 +1,3 @@
-# Encoding: utf-8
-
 module Qless
   module JobReservers
     # Round-robins through all the provided queues
@@ -13,7 +11,7 @@ module Qless
       end
 
       def reserve
-        @num_queues.times do |i|
+        @num_queues.times do |_i|
           job = next_queue.pop
           return job if job
         end
@@ -33,7 +31,7 @@ module Qless
         @description = nil
       end
 
-    private
+      private
 
       TYPE_DESCRIPTION = 'round robin'
 

@@ -1,5 +1,3 @@
-# Encoding: utf-8
-
 module Qless
   module JobReservers
     class Ordered

@@ -1,6 +1,3 @@
-
-# Encoding: utf-8
-
 require 'sinatra/base'
 require 'qless'
 require 'erubi'
@@ -10,7 +7,7 @@ module Qless
   class Server < Sinatra::Base
     # Path-y-ness
     dir = File.dirname(File.expand_path(__FILE__))
-    set :views        , "#{dir}/server/views"
+    set :views, "#{dir}/server/views"
     set :public_folder, "#{dir}/server/static"
 
     # For debugging purposes at least, I want this
@@ -66,7 +63,7 @@ module Qless
       def current_page
         @current_page ||= begin
           Integer(params[:page])
-        rescue
+        rescue StandardError
           1
         end
       end
@@ -83,13 +80,13 @@ module Qless
 
       def tabs
         [
-          { name: 'Queues'   , path: '/queues'   },
-          { name: 'Workers'  , path: '/workers'  },
-          { name: 'Track'    , path: '/track'    },
-          { name: 'Failed'   , path: '/failed'   },
-          { name: 'Completed', path: '/completed'},
-          { name: 'Config'   , path: '/config'   },
-          { name: 'About'    , path: '/about'    }
+          { name: 'Queues', path: '/queues' },
+          { name: 'Workers', path: '/workers' },
+          { name: 'Track', path: '/track' },
+          { name: 'Failed', path: '/failed' },
+          { name: 'Completed', path: '/completed' },
+          { name: 'Config', path: '/config' },
+          { name: 'About', path: '/about' }
         ]
       end
 
@@ -122,7 +119,8 @@ module Qless
       # Make the id acceptable as an id / att in HTML
       def sanitize_attr(attr)
         return unless attr
-        attr.gsub(/[^a-zA-Z\:\_]/, '-')
+
+        attr.gsub(/[^a-zA-Z:_]/, '-')
       end
 
       # What are the top tags? Since it might go on, say, every
@@ -146,13 +144,13 @@ module Qless
         diff_seconds = Time.now - t
         formatted = t.strftime('%b %e, %Y %H:%M:%S')
         case diff_seconds
-        when 0 .. 59
+        when 0..59
           "#{formatted} (#{diff_seconds.to_i} seconds ago)"
-        when 60 ... 3600
+        when 60...3600
           "#{formatted} (#{(diff_seconds / 60).to_i} minutes ago)"
-        when 3600 ... 3600 * 24
+        when 3600...3600 * 24
           "#{formatted} (#{(diff_seconds / 3600).to_i} hours ago)"
-        when (3600 * 24) ... (3600 * 24 * 30)
+        when (3600 * 24)...(3600 * 24 * 30)
           "#{formatted} (#{(diff_seconds / (3600 * 24)).to_i} days ago)"
         else
           formatted
@@ -184,7 +182,7 @@ module Qless
       json(client.queues[params[:name]].counts)
     end
 
-    filtered_tabs = %w[ running scheduled stalled depends recurring ].to_set
+    filtered_tabs = %w[running scheduled stalled depends recurring].to_set
     get '/queues/:name/?:tab?' do
       queue = client.queues[params[:name]]
       tab   = params.fetch('tab', 'stats')
@@ -322,15 +320,13 @@ module Qless
 
     post '/priority/?' do
       # Expects a JSON-encoded dictionary of jid => priority
-      response = Hash.new
+      response = {}
       r = JSON.parse(request.body.read)
       r.each_pair do |jid, priority|
-        begin
-          client.jobs[jid].priority = priority
-          response[jid] = priority
-        rescue
-          response[jid] = 'failed'
-        end
+        client.jobs[jid].priority = priority
+        response[jid] = priority
+      rescue StandardError
+        response[jid] = 'failed'
       end
       return json(response)
     end
@@ -338,60 +334,50 @@ module Qless
     post '/pause/?' do
       # Expects JSON blob: {'queue': <queue>}
       r = JSON.parse(request.body.read)
-      if r['queue']
-        @client.queues[r['queue']].pause
-        return json({ queue: 'paused' })
-      else
-        raise 'No queue provided'
-      end
+      raise 'No queue provided' unless r['queue']
+
+      @client.queues[r['queue']].pause
+      return json({ queue: 'paused' })
     end
 
     post '/unpause/?' do
       # Expects JSON blob: {'queue': <queue>}
       r = JSON.parse(request.body.read)
-      if r['queue']
-        @client.queues[r['queue']].unpause
-        return json({ queue: 'unpaused' })
-      else
-        raise 'No queue provided'
-      end
+      raise 'No queue provided' unless r['queue']
+
+      @client.queues[r['queue']].unpause
+      return json({ queue: 'unpaused' })
     end
 
     post '/timeout/?' do
       # Expects JSON blob: {'jid': <jid>}
       r = JSON.parse(request.body.read)
-      if r['jid']
-        @client.jobs[r['jid']].timeout
-        return json({ jid: r['jid'] })
-      else
-        raise 'No jid provided'
-      end
+      raise 'No jid provided' unless r['jid']
+
+      @client.jobs[r['jid']].timeout
+      return json({ jid: r['jid'] })
     end
 
     post '/tag/?' do
       # Expects a JSON-encoded dictionary of jid => [tag, tag, tag]
-      response = Hash.new
+      response = {}
       JSON.parse(request.body.read).each_pair do |jid, tags|
-        begin
-          client.jobs[jid].tag(*tags)
-          response[jid] = tags
-        rescue
-          response[jid] = 'failed'
-        end
+        client.jobs[jid].tag(*tags)
+        response[jid] = tags
+      rescue StandardError
+        response[jid] = 'failed'
       end
       return json(response)
     end
 
     post '/untag/?' do
       # Expects a JSON-encoded dictionary of jid => [tag, tag, tag]
-      response = Hash.new
+      response = {}
       JSON.parse(request.body.read).each_pair do |jid, tags|
-        begin
-          client.jobs[jid].untag(*tags)
-          response[jid] = tags
-        rescue
-          response[jid] = 'failed'
-        end
+        client.jobs[jid].untag(*tags)
+        response[jid] = tags
+      rescue StandardError
+        response[jid] = 'failed'
       end
       return json(response)
     end

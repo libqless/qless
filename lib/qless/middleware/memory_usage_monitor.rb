@@ -1,4 +1,3 @@
-
 module Qless
   module Middleware
     # Monitors the memory usage of the Qless worker, instructing
@@ -28,21 +27,22 @@ module Qless
         end
       end
 
-      SHELL_OUT_FOR_MEMORY = -> do
-        # Taken from:
-        # http://stackoverflow.com/a/4133642/29262
-        Integer(`ps -o rss= -p #{Process.pid}`)
-      end unless defined?(SHELL_OUT_FOR_MEMORY)
+      unless defined?(SHELL_OUT_FOR_MEMORY)
+        SHELL_OUT_FOR_MEMORY = lambda do
+          # Taken from:
+          # http://stackoverflow.com/a/4133642/29262
+          Integer(`ps -o rss= -p #{Process.pid}`)
+        end
+      end
 
       begin
         require 'rusage'
       rescue LoadError
-        warn "Could not load `rusage` gem. Falling back to shelling out "
-             "to get process memory usage, which is several orders of magnitude slower."
+        warn 'Could not load `rusage` gem. Falling back to shelling out '
 
         define_singleton_method(:current_usage_in_kb, &SHELL_OUT_FOR_MEMORY)
       else
-        memory_ratio = Process.rusage.maxrss / SHELL_OUT_FOR_MEMORY.().to_f
+        memory_ratio = Process.rusage.maxrss / SHELL_OUT_FOR_MEMORY.call.to_f
 
         if (800...1200).cover?(memory_ratio)
           # OS X tends to return maxrss in Bytes.
@@ -59,4 +59,3 @@ module Qless
     end
   end
 end
-

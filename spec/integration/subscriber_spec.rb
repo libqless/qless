@@ -1,5 +1,3 @@
-# Encoding: utf-8
-
 # The things we're testing
 require 'qless'
 require 'qless/subscriber'
@@ -16,11 +14,9 @@ module Qless
       redis.publish(channel, message)
     end
 
-    def listen
+    def listen(&block)
       # Start a subscriber on our test channel
-      Subscriber.start(client, channel, log_to: logger) do |this, message|
-        yield this, message
-      end
+      Subscriber.start(client, channel, log_to: logger, &block)
     end
 
     it 'can listen for messages' do
@@ -39,6 +35,7 @@ module Qless
       # messages, and not fall over instead
       listen do |_, message|
         raise 'Explodify' if message['explode']
+
         new_redis.rpush(channel, message)
       end
 

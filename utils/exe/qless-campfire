@@ -8,25 +8,29 @@ require 'micro-optparse'
 
 @options = Parser.new do |p|
   p.banner = 'This agent lets you get campfire notifications for the progress of tracked jobs'
-  p.option :subdomain, 'campfire subdomain'    , :default => '', :value_satisfies => lambda { |subdomain| subdomain.is_a?(String) }
-  p.option :token    , 'campfire token for bot', :default => '', :value_satisfies => lambda { |subdomain| subdomain.is_a?(String) }
-  p.option :room     , 'campfire room to talk in (defaults to first room)', :default => ''
-  p.option :host     , 'host:port for your qless redis instance', :default => 'localhost:6379'
-  p.option :web      , 'host:port for your qless web ui', :default => 'localhost:5678'
+  p.option :subdomain, 'campfire subdomain', default: '', value_satisfies: lambda { |subdomain|
+    subdomain.is_a?(String)
+  }
+  p.option :token, 'campfire token for bot', default: '', value_satisfies: lambda { |subdomain|
+    subdomain.is_a?(String)
+  }
+  p.option :room, 'campfire room to talk in (defaults to first room)', default: ''
+  p.option :host, 'host:port for your qless redis instance', default: 'localhost:6379'
+  p.option :web, 'host:port for your qless web ui', default: 'localhost:5678'
 end.process!
 
 # Get a campfire object, and room
 puts 'Connecting to campfire...'
-@campfire = Tinder::Campfire.new @options[:subdomain], :token => @options[:token]
-if not @options[:room]
-  @room   = @campfire.rooms.first
-else
-  @room   = @campfire.find_room_by_name(@options[:room])
-end
+@campfire = Tinder::Campfire.new @options[:subdomain], token: @options[:token]
+@room = if !@options[:room]
+          @campfire.rooms.first
+        else
+          @campfire.find_room_by_name(@options[:room])
+        end
 
 # And now qless stuff
 puts 'Connecting to qless...'
-@client   = Qless::Client.new(:host => @options[:host])
+@client = Qless::Client.new(host: @options[:host])
 
 def speak(message)
   @room.speak message
@@ -38,7 +42,7 @@ def paste(message)
   puts "Pasted '#{message}'"
 end
 
-def event(jid, &block)
+def event(jid)
   job = @client.jobs[jid]
   if job.nil?
     speak("#{jid[0...8]} #{yield job} | http://#{@options[:host]}/jobs/#{jid}]")
@@ -48,11 +52,11 @@ def event(jid, &block)
 end
 
 @client.events.listen do |on|
-  on.canceled  { |jid| event(jid) { |job| 'canceled' } }
-  on.stalled   { |jid| event(jid) { |job| 'stalled'  } }
-  on.track     { |jid| event(jid) { |job| 'is being tracked'   } }
-  on.untrack   { |jid| event(jid) { |job| 'not longer tracked' } }
-  
+  on.canceled  { |jid| event(jid) { |_job| 'canceled' } }
+  on.stalled   { |jid| event(jid) { |_job| 'stalled'  } }
+  on.track     { |jid| event(jid) { |_job| 'is being tracked'   } }
+  on.untrack   { |jid| event(jid) { |_job| 'not longer tracked' } }
+
   on.completed do |jid|
     event(jid) do |job|
       if job
@@ -66,7 +70,7 @@ end
       end
     end
   end
-  
+
   on.popped do |jid|
     event(jid) do |job|
       if job
@@ -76,7 +80,7 @@ end
       end
     end
   end
-  
+
   on.put do |jid|
     event(jid) do |job|
       if job
@@ -86,7 +90,7 @@ end
       end
     end
   end
-  
+
   on.failed do |jid|
     job = @client.jobs[jid]
     if job
@@ -96,10 +100,10 @@ end
       speak("#{jid} failed")
     end
   end
-  
+
   puts 'Listening...'
-  
-  Signal.trap("INT") do
+
+  Signal.trap('INT') do
     puts 'Exiting'
     Process.exit(0)
   end

@@ -5,14 +5,11 @@ require 'qless'
 require 'thor'
 
 class Configurator < Thor
-
-  class_option :redis, :default => 'redis://localhost:6379/0'
+  class_option :redis, default: 'redis://localhost:6379/0'
 
   no_commands do
     def qless
-      if @qless.nil?
-        @qless = Qless::Client.new(url: options[:redis])
-      end
+      @qless = Qless::Client.new(url: options[:redis]) if @qless.nil?
       @qless
     end
   end
@@ -23,7 +20,7 @@ class Configurator < Thor
   end
 
   desc 'load <filename> [--clear]', 'Set config from a file and command-line args'
-  option :clear, :type => :boolean, :default => false
+  option :clear, type: :boolean, default: false
   def load(filename)
     File.open(filename) do |file|
       values = JSON.load(file)
@@ -39,7 +36,6 @@ class Configurator < Thor
       end
     end
   end
-
 end
 
 Configurator.start(ARGV)

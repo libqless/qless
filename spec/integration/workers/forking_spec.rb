@@ -1,5 +1,3 @@
-# Encoding: utf-8
-
 require 'spec_helper'
 require 'qless/middleware/retry_exceptions'
 require 'support/forking_worker_context'
@@ -8,38 +6,38 @@ require 'timeout'
 
 module Qless
   describe Workers::ForkingWorker do
-    include_context "forking worker"
+    include_context 'forking worker'
 
     context 'when the parent process is killed with a TERM signal' do
       around(:each) { |example| Timeout.timeout(10) { example.run } }
 
-      let(:worker_program) {
+      let(:worker_program) do
         '$stdout.sync = true;' \
         'Qless::Workers::ForkingWorker.new(Qless::JobReservers::RoundRobin.new([]), ' \
         '  interval: 1, max_startup_interval: 0, log_level: Logger::DEBUG' \
         ').run'
-      }
+      end
 
-      let(:cmdline) {
+      let(:cmdline) do
         "ruby -I#{$LOAD_PATH.map { |p| Shellwords.shellescape(p) }.join(File::PATH_SEPARATOR)}" \
-        " -rqless -rqless/job_reservers/round_robin -rqless/worker/forking" \
+        ' -rqless -rqless/job_reservers/round_robin -rqless/worker/forking' \
         " -e #{Shellwords.shellescape worker_program}"
-      }
+      end
 
       it 'kills the child process' do
-        IO.popen(cmdline, :err=>[:child, :out]) do |io|
+        IO.popen(cmdline, err: %i[child out]) do |io|
           # Find pids
           loop until io.gets =~ /[^0-9]([0-9]+): Spawned worker ([0-9]+)/
-          parent_pid = $1.to_i
-          child_pid = $2.to_i
+          parent_pid = ::Regexp.last_match(1).to_i
+          child_pid = ::Regexp.last_match(2).to_i
 
           # Wait until child is fully functional, then kill parent
           loop until io.gets =~ /Qless.*Waiting/
-          Process.kill("TERM", parent_pid)
+          Process.kill('TERM', parent_pid)
           io.read # Wait for parent process to shut down
 
           begin
-            Process.kill("KILL", child_pid)
+            Process.kill('KILL', child_pid)
             raise "Child process #{child_pid} still running after parent pid #{parent_pid} died!"
           rescue Errno::ESRCH
             # Process no longer exists -- expected behavior
@@ -58,7 +56,7 @@ module Qless
       stub_const('JobClass', job_class)
 
       # Make jobs for each word
-      words = %w{foo bar howdy}
+      words = %w[foo bar howdy]
       words.each do |word|
         queue.put('JobClass', { redis: redis._client.id, key: key, word: word })
       end
@@ -81,7 +79,7 @@ module Qless
       stub_const('JobClass', job_class)
 
       # Make jobs for each word
-      words = %w{foo bar howdy}
+      words = %w[foo bar howdy]
       words.each do |word|
         queue.put('JobClass', { key: key, word: word })
       end
@@ -163,7 +161,7 @@ module Qless
       # Wait for the job to complete, and then kill the child process
       drain_worker_queues(worker)
       words = redis.lrange(key, 0, -1)
-      expect(words).to eq %w[ after_fork job job job ]
+      expect(words).to eq %w[after_fork job job job]
     end
 
     context 'when a job times out', :uses_threads do

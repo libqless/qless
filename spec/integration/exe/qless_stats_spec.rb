@@ -1,5 +1,3 @@
-# Encoding: utf-8
-
 require 'json'
 require 'socket'
 require 'tempfile'
@@ -14,28 +12,24 @@ describe 'qless-stats', :integration do
   end
 
   describe 'statsd subcommand' do
-
     def get_statsd_messages
-      begin
-        sock = UDPSocket.new
-        sock.bind('127.0.0.1', 8125)
-        yield sock
-        messages = []
-        while true
-          begin
-            messages << sock.recvfrom_nonblock(16384)[0]
-          rescue IO::WaitReadable
-            break
-          end
+      sock = UDPSocket.new
+      sock.bind('127.0.0.1', 8125)
+      yield sock
+      messages = []
+      while true
+        begin
+          messages << sock.recvfrom_nonblock(16_384)[0]
+        rescue IO::WaitReadable
+          break
         end
-        return messages
-      ensure
-        sock.close
       end
+      messages
+    ensure
+      sock.close
     end
 
     context 'with some interesting job stats' do
-
       before do
         10.times do
           client.queues['queue'].put('PretendJob', {})
@@ -130,9 +124,6 @@ describe 'qless-stats', :integration do
       it 'tracks worker counts' do
         expect(messages).to include('workers:1|g')
       end
-
     end
-
   end
-
 end

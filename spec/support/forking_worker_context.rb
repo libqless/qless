@@ -12,9 +12,9 @@ class TempfileWithString < Tempfile
   end
 end
 
-shared_context "forking worker" do
+shared_context 'forking worker' do
   include Qless::WorkerHelpers
-  include_context "redis integration"
+  include_context 'redis integration'
 
   let(:key) { :worker_integration_job }
   let(:queue) { client.queues['main'] }
@@ -25,9 +25,9 @@ shared_context "forking worker" do
       interval: 1,
       max_startup_interval: 0,
       output: log_io,
-      log_level: Logger::DEBUG)
+      log_level: Logger::DEBUG
+    )
   end
 
   after { log_io.unlink }
 end
-

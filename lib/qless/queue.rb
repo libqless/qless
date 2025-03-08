@@ -1,5 +1,3 @@
-# Encoding: utf-8
-
 require 'qless/job'
 require 'redis'
 require 'json'
@@ -37,7 +35,7 @@ module Qless
   # A class for interacting with a specific queue. Not meant to be instantiated
   # directly, it's accessed with Client#queues[...]
   class Queue
-    attr_reader   :name, :client
+    attr_reader :name, :client
 
     def initialize(name, client)
       @client = client
@@ -91,11 +89,9 @@ module Qless
 
     def forget
       job_count = length
-      if job_count.zero?
-        @client.call('queue.forget', name)
-      else
-        raise QueueNotEmptyError, "The queue is not empty. It has #{job_count} jobs."
-      end
+      raise QueueNotEmptyError, "The queue is not empty. It has #{job_count} jobs." unless job_count.zero?
+
+      @client.call('queue.forget', name)
     end
 
     # Put the described job in this queue
@@ -113,8 +109,7 @@ module Qless
                    'priority', opts.fetch(:priority, 0),
                    'tags', JSON.generate(opts.fetch(:tags, [])),
                    'retries', opts.fetch(:retries, 5),
-                   'depends', JSON.generate(opts.fetch(:depends, []))
-      )
+                   'depends', JSON.generate(opts.fetch(:depends, [])))
     end
 
     # Make a recurring job in this queue
@@ -160,7 +155,7 @@ module Qless
     # How many items in the queue?
     def length
       (@client.redis.multi do
-        %w[ locks work scheduled depends ].each do |suffix|
+        %w[locks work scheduled depends].each do |suffix|
           @client.redis.zcard("ql:q:#{@name}-#{suffix}")
         end
       end).inject(0, :+)
@@ -169,12 +164,12 @@ module Qless
     def to_s
       "#<Qless::Queue #{@name}>"
     end
-    alias_method :inspect, :to_s
+    alias inspect to_s
 
     def ==(other)
       self.class == other.class &&
-      client == other.client &&
-      name.to_s == other.name.to_s
+        client == other.client &&
+        name.to_s == other.name.to_s
     end
     alias eql? ==
 
@@ -182,10 +177,11 @@ module Qless
       self.class.hash ^ client.hash ^ name.to_s.hash
     end
 
-  private
+    private
 
     def job_options(klass, data, opts)
       return opts unless klass.respond_to?(:default_job_options)
+
       klass.default_job_options(data).merge(opts)
     end
 

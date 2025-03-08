@@ -1,5 +1,3 @@
-# Encoding: utf-8
-
 require 'qless/job_reservers/round_robin'
 
 module Qless

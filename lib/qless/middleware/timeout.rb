@@ -26,7 +26,7 @@ module Qless
             return super(job) if timeout_seconds.nil?
 
             if !timeout_seconds.is_a?(Numeric) || timeout_seconds <= 0
-              raise InvalidTimeoutError, "Timeout must be a positive number or nil, " \
+              raise InvalidTimeoutError, 'Timeout must be a positive number or nil, ' \
                                          "but was #{timeout_seconds}"
             end
 
@@ -42,9 +42,9 @@ module Qless
               job.fail(*Qless.failure_formatter.format(job, error, []))
               # Since we are leaving with bang (exit!), normal requeue logic does not work.
               # Do it manually right here.
-              if self.is_a?(::Qless::Middleware::RequeueExceptions) &&
-                 self.requeueable?(JobTimedoutError)
-                self.handle_exception(job, error)
+              if is_a?(::Qless::Middleware::RequeueExceptions) &&
+                 requeueable?(JobTimedoutError)
+                handle_exception(job, error)
               end
 
               # ::Timeout.timeout is dangerous to use as it can leave things in an inconsistent

@@ -1,5 +1,3 @@
-# Encoding: utf-8
-
 ENV['RACK_ENV'] = 'test'
 require 'spec_helper'
 require 'yaml'
@@ -19,7 +17,7 @@ module Qless
     let(:a) { client.queues['testing'].tap { |o| o.worker_name = 'worker-a' } }
     let(:b) { client.queues['testing'].tap { |o| o.worker_name = 'worker-b' } }
     # And a second queue
-    let(:other)  { client.queues['other']   }
+    let(:other)  { client.queues['other'] }
 
     before(:all) do
       Capybara.app = Qless::Server.new(Qless::Client.new(redis_config))
@@ -100,7 +98,7 @@ module Qless
 
     it 'can paginate the completed jobs page' do
       build_paginated_objects do |jid|
-        q.put(Qless::Job, {}, :jid => jid)
+        q.put(Qless::Job, {}, jid: jid)
         q.pop.complete
       end
 
@@ -264,8 +262,8 @@ module Qless
       visit "/jobs/#{q.put(Qless::Job, {}, priority: -123)}"
       first('input[placeholder="Pri -123"]').should be
 
-      visit "/jobs/#{q.put(Qless::Job, {}, tags: %w{foo bar widget})}"
-      %w{foo bar widget}.each do |tag|
+      visit "/jobs/#{q.put(Qless::Job, {}, tags: %w[foo bar widget])}"
+      %w[foo bar widget].each do |tag|
         first('span', text: tag).should be
       end
     end
@@ -357,9 +355,9 @@ module Qless
     it 'can search by tag' do
       # We should tag some jobs, and then search by tags and ensure
       # that we find all the jobs we'd expect
-      foo    = 5.times.map { |i| q.put(Qless::Job, {}, tags: ['foo']) }
-      bar    = 5.times.map { |i| q.put(Qless::Job, {}, tags: ['bar']) }
-      foobar = 5.times.map { |i| q.put(Qless::Job, {}, tags: %w{foo bar}) }
+      foo    = 5.times.map { |_i| q.put(Qless::Job, {}, tags: ['foo']) }
+      bar    = 5.times.map { |_i| q.put(Qless::Job, {}, tags: ['bar']) }
+      foobar = 5.times.map { |_i| q.put(Qless::Job, {}, tags: %w[foo bar]) }
 
       visit '/tag?tag=foo'
       (foo + foobar).each do |jid|
@@ -382,7 +380,7 @@ module Qless
       first('h2', text: /#{job.klass}/i).should be
       first('h2', text: /#{job.queue_name}/i).should be
       first('h2', text: /#{job.state}/i).should be
-      first('pre', text: /\"foo\"\s*:\s*\"bar\"/im).should be
+      first('pre', text: /"foo"\s*:\s*"bar"/im).should be
 
       # Now let's pop the job and fail it just to make sure we see the error
       q.pop.fail('something-something', 'what-what')
@@ -398,9 +396,9 @@ module Qless
       first('li', text: /foo/i).should be_nil
       first('li', text: /bar/i).should be_nil
 
-      foo = 5.times.map { |i| q.put(Qless::Job, {}) }
+      foo = 5.times.map { |_i| q.put(Qless::Job, {}) }
       q.pop(5).each { |job| job.fail('foo', 'foo-message') }
-      bar = 5.times.map { |i| q.put(Qless::Job, {}) }
+      bar = 5.times.map { |_i| q.put(Qless::Job, {}) }
       q.pop(5).each { |job| job.fail('bar', 'bar-message') }
       visit '/failed'
       first('li', text: /foo\D+5/i).should be
@@ -417,24 +415,24 @@ module Qless
       bar = q.put(Qless::Job, {})
 
       visit '/completed'
-      first('a', :text => /#{foo[0..5]}/i).should be_nil
-      first('a', :text => /#{bar[0..5]}/i).should be_nil
+      first('a', text: /#{foo[0..5]}/i).should be_nil
+      first('a', text: /#{bar[0..5]}/i).should be_nil
 
       q.pop.complete
       q.pop.fail('foo', 'foo-message')
 
       visit '/completed'
-      first('a', :text => /#{foo[0..5]}/i).should be
-      first('a', :text => /#{bar[0..5]}/i).should be_nil
+      first('a', text: /#{foo[0..5]}/i).should be
+      first('a', text: /#{bar[0..5]}/i).should be_nil
     end
 
     it 'can retry a group of failed jobs', js: true do
       # We'll fail a bunch of jobs, with two kinds of errors,
       # and then we'll make sure that we can retry all of
       # one kind, but the rest still remain failed.
-      foo = 5.times.map { |i| q.put(Qless::Job, {}) }
+      foo = 5.times.map { |_i| q.put(Qless::Job, {}) }
       q.pop(5).each { |job| job.fail('foo', 'foo-message') }
-      bar = 5.times.map { |i| q.put(Qless::Job, {}) }
+      bar = 5.times.map { |_i| q.put(Qless::Job, {}) }
       q.pop(5).each { |job| job.fail('bar', 'bar-message') }
 
       visit '/failed'
@@ -474,9 +472,9 @@ module Qless
       # We'll fail a bunch of jobs, with two kinds of errors,
       # and then we'll make sure that we can retry all of
       # one kind, but the rest still remain failed.
-      foo = 5.times.map { |i| q.put(Qless::Job, {}) }
+      foo = 5.times.map { |_i| q.put(Qless::Job, {}) }
       q.pop(5).each { |job| job.fail('foo', 'foo-message') }
-      bar = 5.times.map { |i| q.put(Qless::Job, {}) }
+      bar = 5.times.map { |_i| q.put(Qless::Job, {}) }
       q.pop(5).each { |job| job.fail('bar', 'bar-message') }
 
       visit '/failed'
@@ -564,7 +562,7 @@ module Qless
     end
 
     it 'can remove tags', js: true do
-      jid = q.put(Qless::Job, {}, tags: %w{foo bar})
+      jid = q.put(Qless::Job, {}, tags: %w[foo bar])
       visit "/jobs/#{jid}"
       first('span', text: 'foo').should be
       first('span', text: 'bar').should be
@@ -613,8 +611,8 @@ module Qless
     it 'can sort failed groupings by the number of affected jobs' do
       # Alright, let's make 10 different failure types, and then give them
       # a certain number of jobs each, and then make sure that they stay sorted
-      %w{a b c d e f g h i j}.each_with_index do |group, index|
-        (index + 5).times do |i|
+      %w[a b c d e f g h i j].each_with_index do |group, index|
+        (index + 5).times do |_i|
           q.put(Qless::Job, {})
           q.pop.fail(group, 'testing')
         end
@@ -624,7 +622,7 @@ module Qless
       groups = all(:xpath, '//a[contains(@href, "/failed/")]')
       groups.map { |g| g.text }.join(' ').should eq('j i h g f e d c b a')
 
-      10.times do |i|
+      10.times do |_i|
         q.put(Qless::Job, {})
         q.pop.fail('e', 'testing')
       end
@@ -817,15 +815,15 @@ module Qless
       q.put(Qless::Job, {})
       get '/queues.json'
       response = {
-          'running'   => 0,
-          'name'      => 'testing',
-          'waiting'   => 1,
-          'recurring' => 0,
-          'depends'   => 0,
-          'stalled'   => 0,
-          'scheduled' => 0,
-          'paused'    => false
-        }
+        'running' => 0,
+        'name' => 'testing',
+        'waiting' => 1,
+        'recurring' => 0,
+        'depends' => 0,
+        'stalled' => 0,
+        'scheduled' => 0,
+        'paused' => false
+      }
       JSON.parse(last_response.body).should eq([response])
 
       get '/queues/testing.json'

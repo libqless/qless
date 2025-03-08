@@ -1,5 +1,3 @@
-# Encoding: utf-8
-
 module Qless
   module Middleware
     # This middleware is like RetryExceptions, but it doesn't use qless-core's
@@ -39,12 +37,13 @@ module Qless
 
       def requeue_on(*exceptions, options)
         RequeueableException.from_splat_and_options(
-          *exceptions, options).each do |exc|
+          *exceptions, options
+        ).each do |exc|
           requeueable_exceptions[exc.klass] = exc
         end
       end
 
-      DEFAULT_ON_REQUEUE_CALLBACK = lambda { |error, job| }
+      DEFAULT_ON_REQUEUE_CALLBACK = ->(error, job) {}
       def use_on_requeue_callback(&block)
         @on_requeue_callback = block if block
       end
@@ -60,7 +59,8 @@ module Qless
         requeues_by_exception[config.klass.name] ||= 0
 
         config.raise_if_exhausted_requeues(
-          error, requeues_by_exception[config.klass.name])
+          error, requeues_by_exception[config.klass.name]
+        )
 
         requeues_by_exception[config.klass.name] += 1
         job.requeue(job.queue_name, delay: config.delay, data: job.data)

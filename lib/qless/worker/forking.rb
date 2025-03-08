@@ -1,10 +1,7 @@
-# Encoding: utf-8
-
 # Qless requires
 require 'qless'
 require 'qless/worker/base'
 require 'qless/worker/serial'
-require 'thread'
 
 module Qless
   module Workers
@@ -50,7 +47,7 @@ module Qless
         # We use 11 as the exit status so that it is something unique
         # (rather than the common 1). Plus, 11 looks a little like
         # ll (i.e. "Lock Lost").
-        worker.on_current_job_lock_lost { |job| exit!(11) }
+        worker.on_current_job_lock_lost { |_job| exit!(11) }
         @modules.each { |mod| worker.extend(mod) }
         worker
       end
@@ -86,21 +83,30 @@ module Qless
         # to the child processes. It's just that sometimes we want to wait for
         # them and then exit
         trap('TERM') do
-          contention_aware_handler { stop!('TERM', in_signal_handler=true); exit }
+          contention_aware_handler do
+            stop!('TERM', true)
+            exit
+          end
         end
         trap('INT') do
-          contention_aware_handler { stop!('INT', in_signal_handler=true); exit }
+          contention_aware_handler do
+            stop!('INT', true)
+            exit
+          end
         end
         safe_trap('HUP') { sighup_handler.call }
         safe_trap('QUIT') do
-          contention_aware_handler { stop!('QUIT', in_signal_handler=true); exit }
+          contention_aware_handler do
+            stop!('QUIT', true)
+            exit
+          end
         end
         safe_trap('USR1') do
-          contention_aware_handler { stop!('KILL', in_signal_handler=true) }
+          contention_aware_handler { stop!('KILL', true) }
         end
         begin
-          trap('CONT') { stop('CONT', in_signal_handler=true) }
-          trap('USR2') { stop('USR2', in_signal_handler=true) }
+          trap('CONT') { stop('CONT', true) }
+          trap('USR2') { stop('USR2', true) }
         rescue ArgumentError
           warn 'Signals USR2, and/or CONT not supported.'
         end
@@ -112,26 +118,25 @@ module Qless
 
         # Now keep an eye on our child processes, spawn replacements as needed
         loop do
-          begin
-            # Don't wait on any processes if we're already in shutdown mode.
-            break if @shutdown
+          # Don't wait on any processes if we're already in shutdown mode.
+          break if @shutdown
 
-            # Wait for any child to kick the bucket
-            pid, status = Process.wait2
-            code, sig = status.exitstatus, status.stopsig
-            log((code == 0 ? :info : :warn),
+          # Wait for any child to kick the bucket
+          pid, status = Process.wait2
+          code = status.exitstatus
+          sig = status.stopsig
+          log((code == 0 ? :info : :warn),
               "Worker process #{pid} died with #{code} from signal (#{sig})")
 
-            # allow our shutdown logic (called from a separate thread) to take affect.
-            break if @shutdown
+          # allow our shutdown logic (called from a separate thread) to take affect.
+          break if @shutdown
 
-            spawn_replacement_child(pid)
-            process_postponed_actions
-          rescue SystemCallError => e
-            log(:error, "Failed to wait for child process: #{e.inspect}")
-            # If we're shutting down, the loop above will exit
-            exit! unless @shutdown
-          end
+          spawn_replacement_child(pid)
+          process_postponed_actions
+        rescue SystemCallError => e
+          log(:error, "Failed to wait for child process: #{e.inspect}")
+          # If we're shutting down, the loop above will exit
+          exit! unless @shutdown
         end
       end
 
@@ -141,25 +146,23 @@ module Qless
       end
 
       # Signal all the children
-      def stop(signal = 'QUIT', in_signal_handler=true)
+      def stop(signal = 'QUIT', in_signal_handler = true)
         log(:warn, "Sending #{signal} to children") unless in_signal_handler
         children.each do |pid|
-          begin
-            Process.kill(signal, pid)
-          rescue Errno::ESRCH
-            # no such process -- means the process has already died.
-          end
+          Process.kill(signal, pid)
+        rescue Errno::ESRCH
+          # no such process -- means the process has already died.
         end
       end
 
       # Signal all the children and wait for them to exit.
       # Should only be called when we have the lock on @sandbox_mutex
-      def stop!(signal = 'QUIT', in_signal_handler=true)
-        shutdown(in_signal_handler=in_signal_handler)
-        shutdown_sandboxes(signal, in_signal_handler=in_signal_handler)
+      def stop!(signal = 'QUIT', in_signal_handler = true)
+        shutdown(in_signal_handler = in_signal_handler)
+        shutdown_sandboxes(signal, in_signal_handler)
       end
 
-    private
+      private
 
       def startup_sandboxes
         # Make sure we respond to signals correctly
@@ -184,23 +187,22 @@ module Qless
       end
 
       # Should only be called when we have a lock on @sandbox_mutex
-      def shutdown_sandboxes(signal, in_signal_handler=true)
+      def shutdown_sandboxes(signal, in_signal_handler = true)
         # First, send the signal
-        stop(signal, in_signal_handler=in_signal_handler)
+        stop(signal, in_signal_handler = in_signal_handler)
 
         # Wait for each of our children
         log(:warn, 'Waiting for child processes') unless in_signal_handler
 
         until @sandboxes.empty?
           begin
-            pid, _ = Process.wait2
+            pid, = Process.wait2
             log(:warn, "Child #{pid} stopped") unless in_signal_handler
             @sandboxes.delete(pid)
           rescue SystemCallError
             break
           end
         end
-
 
         unless in_signal_handler
           log(:warn, 'All children have stopped')
@@ -213,8 +215,6 @@ module Qless
 
         @sandboxes.clear
       end
-
-    private
 
       def spawn_replacement_child(pid)
         @sandbox_mutex.synchronize do
@@ -239,7 +239,6 @@ module Qless
           spawn.run
         end
       end
-
     end
   end
 end

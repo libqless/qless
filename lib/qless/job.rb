@@ -1,5 +1,3 @@
-# Encoding: utf-8
-
 require 'qless'
 require 'qless/queue'
 require 'qless/lua_script'
@@ -28,8 +26,8 @@ module Qless
 
     def ==(other)
       self.class == other.class &&
-      jid == other.jid &&
-      client == other.client
+        jid == other.jid &&
+        client == other.client
     end
     alias eql? ==
 
@@ -40,12 +38,10 @@ module Qless
 
   # A Qless job
   class Job < BaseJob
-    attr_reader :jid, :expires_at, :state, :queue_name, :worker_name, :failure, :spawned_from_jid
-    attr_reader :klass_name, :tracked, :dependencies, :dependents
-    attr_reader :original_retries, :retries_left, :raw_queue_history
-    attr_reader :state_changed
+    attr_reader :jid, :expires_at, :state, :queue_name, :worker_name, :failure, :spawned_from_jid, :klass_name,
+                :tracked, :dependencies, :dependents, :original_retries, :retries_left, :raw_queue_history, :state_changed
     attr_accessor :data, :priority, :tags
-    alias_method(:state_changed?, :state_changed)
+    alias state_changed? state_changed
 
     MiddlewareMisconfiguredError = Class.new(StandardError)
 
@@ -72,9 +68,9 @@ module Qless
         klass.around_perform(self)
       elsif middlewares.any?
         raise MiddlewareMisconfiguredError, 'The middleware chain for ' +
-              "#{klass} (#{middlewares.inspect}) is misconfigured." +
-              'Qless::Job::SupportsMiddleware must be extended onto your job' +
-              'class first if you want to use any middleware.'
+                                            "#{klass} (#{middlewares.inspect}) is misconfigured." +
+                                            'Qless::Job::SupportsMiddleware must be extended onto your job' +
+                                            'class first if you want to use any middleware.'
       elsif !klass.respond_to?(:perform)
         # If the klass doesn't have a :perform method, we should raise an error
         fail("#{queue_name}-method-missing",
@@ -86,23 +82,23 @@ module Qless
 
     def self.build(client, klass, attributes = {})
       defaults = {
-        'jid'              => Qless.generate_jid,
+        'jid' => Qless.generate_jid,
         'spawned_from_jid' => nil,
-        'data'             => {},
-        'klass'            => klass.to_s,
-        'priority'         => 0,
-        'tags'             => [],
-        'worker'           => 'mock_worker',
-        'expires'          => Time.now + (60 * 60), # an hour from now
-        'state'            => 'running',
-        'tracked'          => false,
-        'queue'            => 'mock_queue',
-        'retries'          => 5,
-        'remaining'        => 5,
-        'failure'          => {},
-        'history'          => [],
-        'dependencies'     => [],
-        'dependents'       => []
+        'data' => {},
+        'klass' => klass.to_s,
+        'priority' => 0,
+        'tags' => [],
+        'worker' => 'mock_worker',
+        'expires' => Time.now + (60 * 60), # an hour from now
+        'state' => 'running',
+        'tracked' => false,
+        'queue' => 'mock_queue',
+        'retries' => 5,
+        'remaining' => 5,
+        'failure' => {},
+        'history' => [],
+        'dependencies' => [],
+        'dependents' => []
       }
       attributes = defaults.merge(Qless.stringify_hash_keys(attributes))
       attributes['data'] = JSON.dump(attributes['data'])
@@ -118,8 +114,8 @@ module Qless
 
     def initialize(client, atts)
       super(client, atts.fetch('jid'))
-      %w{jid data priority tags state tracked
-         failure dependencies dependents spawned_from_jid}.each do |att|
+      %w[jid data priority tags state tracked
+         failure dependencies dependents spawned_from_jid].each do |att|
         instance_variable_set(:"@#{att}", atts.fetch(att))
       end
 
@@ -186,11 +182,11 @@ module Qless
         history_event.each_with_object({}) do |(key, value), hash|
           # The only Numeric (Integer or Float) values we get in the history
           # are timestamps
-          if value.is_a?(Numeric)
-            hash[key] = Time.at(value).utc
-          else
-            hash[key] = value
-          end
+          hash[key] = if value.is_a?(Numeric)
+                        Time.at(value).utc
+                      else
+                        value
+                      end
         end
       end
     end
@@ -228,8 +224,8 @@ module Qless
     # Move this from it's current queue into another
     def requeue(queue, opts = {})
       queue_name = case queue
-                     when String, Symbol then queue
-                     else queue.name
+                   when String, Symbol then queue
+                   else queue.name
                    end
 
       note_state_change :requeue do
@@ -239,8 +235,7 @@ module Qless
                      'priority', opts.fetch(:priority, @priority),
                      'tags', JSON.dump(opts.fetch(:tags, @tags)),
                      'retries', opts.fetch(:retries, @original_retries),
-                     'depends', JSON.dump(opts.fetch(:depends, @dependencies))
-        )
+                     'depends', JSON.dump(opts.fetch(:depends, @dependencies)))
       end
     end
     alias move requeue # for backwards compatibility
@@ -255,10 +250,11 @@ module Qless
           @jid,
           @worker_name,
           group, message,
-          JSON.dump(@data)) || false
+          JSON.dump(@data)
+        ) || false
       end
-    rescue Qless::LuaScriptError => err
-      raise CantFailError.new(err.message)
+    rescue Qless::LuaScriptError => e
+      raise CantFailError.new(e.message)
     end
 
     # Heartbeat a job
@@ -267,7 +263,8 @@ module Qless
         'heartbeat',
         @jid,
         @worker_name,
-        JSON.dump(@data))
+        JSON.dump(@data)
+      )
     end
 
     CantCompleteError = Class.new(Qless::LuaScriptError)
@@ -280,7 +277,8 @@ module Qless
       note_state_change :complete do
         if nxt.nil?
           @client.call(
-            'complete', @jid, @worker_name, @queue_name, JSON.dump(@data))
+            'complete', @jid, @worker_name, @queue_name, JSON.dump(@data)
+          )
         else
           @client.call('complete', @jid, @worker_name, @queue_name,
                        JSON.dump(@data), 'next', nxt, 'delay',
@@ -288,8 +286,8 @@ module Qless
                        JSON.dump(options.fetch(:depends, [])))
         end
       end
-    rescue Qless::LuaScriptError => err
-      raise CantCompleteError.new(err.message)
+    rescue Qless::LuaScriptError => e
+      raise CantCompleteError.new(e.message)
     end
 
     def cancel
@@ -318,11 +316,13 @@ module Qless
       note_state_change :retry do
         if group.nil?
           results = @client.call(
-            'retry', @jid, @queue_name, @worker_name, delay)
+            'retry', @jid, @queue_name, @worker_name, delay
+          )
           results.nil? ? false : results
         else
           results = @client.call(
-            'retry', @jid, @queue_name, @worker_name, delay, group, message)
+            'retry', @jid, @queue_name, @worker_name, delay, group, message
+          )
           results.nil? ? false : results
         end
       end
@@ -348,7 +348,7 @@ module Qless
       end
     end
 
-    [:fail, :complete, :cancel, :requeue, :retry].each do |event|
+    %i[fail complete cancel requeue retry].each do |event|
       define_method :"before_#{event}" do |&block|
         @before_callbacks[event] << block
       end
@@ -368,7 +368,7 @@ module Qless
       result
     end
 
-  private
+    private
 
     def history_timestamp(name, selector)
       items = queue_history.select do |q|
@@ -382,12 +382,11 @@ module Qless
 
   # Wraps a recurring job
   class RecurringJob < BaseJob
-    attr_reader :jid, :data, :priority, :tags, :retries, :interval, :count
-    attr_reader :queue_name, :klass_name, :backlog
+    attr_reader :jid, :data, :priority, :tags, :retries, :interval, :count, :queue_name, :klass_name, :backlog
 
     def initialize(client, atts)
       super(client, atts.fetch('jid'))
-      %w{jid data priority tags retries interval count backlog}.each do |att|
+      %w[jid data priority tags retries interval count backlog].each do |att|
         instance_variable_set("@#{att}".to_sym, atts.fetch(att))
       end
 
@@ -448,15 +447,17 @@ module Qless
 
     def last_spawned_jid
       return nil if never_spawned?
+
       "#{jid}-#{count}"
     end
 
     def last_spawned_job
       return nil if never_spawned?
+
       @client.jobs[last_spawned_jid]
     end
 
-  private
+    private
 
     def never_spawned?
       count.zero?

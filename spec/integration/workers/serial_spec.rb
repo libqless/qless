@@ -1,5 +1,3 @@
-# Encoding: utf-8
-
 # The things we're testing
 require 'qless'
 require 'qless/worker/serial'
@@ -23,7 +21,8 @@ module Qless
         interval: 1,
         max_startup_interval: 0,
         output: output,
-        log_level: Logger::DEBUG)
+        log_level: Logger::DEBUG
+      )
     end
 
     it 'does not leak threads' do
@@ -40,7 +39,7 @@ module Qless
         run_jobs(worker, 1) do
           expect(redis.brpop(key, timeout: 1)).to eq([key.to_s, 'hello'])
         end
-      end.not_to change { Thread.list }
+      end.not_to(change { Thread.list })
     end
 
     it 'can start a worker and then shut it down' do
@@ -53,7 +52,7 @@ module Qless
       stub_const('JobClass', job_class)
 
       # Make jobs for each word
-      words = %w{foo bar howdy}
+      words = %w[foo bar howdy]
       words.each do |word|
         queue.put('JobClass', { redis: redis._client.id, key: key, word: word })
       end
@@ -77,7 +76,7 @@ module Qless
       queue.put('JobClass', { key: key })
 
       run_worker_concurrently_with(worker) do
-        redis.brpop(key, timeout: 1).should eq([key.to_s, "OK"])
+        redis.brpop(key, timeout: 1).should eq([key.to_s, 'OK'])
       end
 
       expect { |b| worker.send(:with_current_job, &b) }.to yield_with_args(nil)
@@ -143,7 +142,7 @@ module Qless
           job2 = queue.pop
           expect(job2.jid).to eq('jid2')
           job2.timeout
-          Thread.main.raise("stop working")
+          Thread.main.raise('stop working')
         end
 
         expect(callback_invoked).to be false
@@ -161,7 +160,7 @@ module Qless
 
         expect(callback_invoked).to be false
         # Subscriber logs errors to output; ensure there was no error
-        expect(output.string).to eq("")
+        expect(output.string).to eq('')
       end
 
       it 'does not blow up for jobs it does not have' do

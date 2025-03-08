@@ -1,4 +1,3 @@
-# Encoding: utf-8
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
@@ -17,8 +16,8 @@ Vagrant.configure('2') do |config|
     'chmod 0440 /etc/sudoers.d/ssh-auth-sock'
 
   config.vm.provider :virtualbox do |vb|
-    vb.customize ["modifyvm", :id, "--memory", "1024"]
-    vb.customize ["modifyvm", :id, "--cpus", "2"]
+    vb.customize ['modifyvm', :id, '--memory', '1024']
+    vb.customize ['modifyvm', :id, '--cpus', '2']
   end
 
   config.vm.provision :shell, path: 'provision.sh', privileged: false

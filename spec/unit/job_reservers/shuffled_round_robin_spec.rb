@@ -1,5 +1,3 @@
-# Encoding: utf-8
-
 require 'spec_helper'
 require 'qless/queue'
 require 'qless/job_reservers/shuffled_round_robin'
@@ -101,7 +99,8 @@ module Qless
           queue_list.stub(shuffle: [q2, q1, q3])
 
           reserver.description.should eq(
-            'Queue2, Queue1, Queue3 (shuffled round robin)')
+            'Queue2, Queue1, Queue3 (shuffled round robin)'
+          )
         end
       end
     end

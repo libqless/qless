@@ -1,5 +1,3 @@
-# Encoding: utf-8
-
 # The things we're testing
 require 'qless'
 
@@ -18,14 +16,14 @@ module Qless
 
     it 'can get all configurations' do
       expect(client.config.all).to eq({
-        'heartbeat'          => 60,
-        'application'        => 'qless',
-        'grace-period'       => 10,
-        'jobs-history'       => 604800,
-        'stats-history'      => 30,
-        'histogram-history'  => 7,
-        'jobs-history-count' => 50000
-      })
+                                        'heartbeat' => 60,
+                                        'application' => 'qless',
+                                        'grace-period' => 10,
+                                        'jobs-history' => 604_800,
+                                        'stats-history' => 30,
+                                        'histogram-history' => 7,
+                                        'jobs-history-count' => 50_000
+                                      })
     end
   end
 end

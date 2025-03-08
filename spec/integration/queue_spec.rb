@@ -1,5 +1,3 @@
-# Encoding: utf-8
-
 # The things we're testing
 require 'qless'
 
@@ -12,46 +10,46 @@ module Qless
 
     it 'provides access to jobs in different states' do
       queue.put('Foo', {})
-      [:depends, :running, :stalled, :scheduled, :recurring].each do |cmd|
+      %i[depends running stalled scheduled recurring].each do |cmd|
         expect(queue.jobs.send(cmd)).to eq([])
       end
     end
-    
+
     it 'provides access to job counts' do
       queue.put('Foo', {})
       expect(queue.counts).to eq({
-        'depends'   => 0,
-        'name'      => 'foo',
-        'paused'    => false,
-        'recurring' => 0,
-        'scheduled' => 0,
-        'running'   => 0,
-        'stalled'   => 0,
-        'waiting'   => 1
-      })
+                                   'depends' => 0,
+                                   'name' => 'foo',
+                                   'paused' => false,
+                                   'recurring' => 0,
+                                   'scheduled' => 0,
+                                   'running' => 0,
+                                   'stalled' => 0,
+                                   'waiting' => 1
+                                 })
     end
 
     def remembered_queue_names
-      client.queues.counts.map { |q| q["name"] }
+      client.queues.counts.map { |q| q['name'] }
     end
 
     it 'can forget an empty queue' do
       jid = queue.put('Foo', {})
       client.bulk_cancel([jid])
 
-      expect {
+      expect do
         queue.forget
-      }.to change { remembered_queue_names }.from([queue.name]).to([])
+      end.to change { remembered_queue_names }.from([queue.name]).to([])
     end
 
     it 'prevents you from forgetting a queue with jobs' do
       queue.put('Foo', {})
 
-      expect {
-        expect {
+      expect do
+        expect do
           queue.forget
-        }.to raise_error(Qless::Queue::QueueNotEmptyError)
-      }.not_to change { remembered_queue_names }
+        end.to raise_error(Qless::Queue::QueueNotEmptyError)
+      end.not_to(change { remembered_queue_names })
     end
 
     it 'provides access to the heartbeat configuration' do
@@ -80,12 +78,13 @@ module Qless
     end
 
     it 'exposes the length of the queue' do
-      expect {
+      expect do
         jid = queue.put('Foo', {}) # waiting
-        queue.put('Foo', {}); queue.pop # running
-        queue.put('Foo', {}, delay: 100000) # scheduled
+        queue.put('Foo', {})
+        queue.pop # running
+        queue.put('Foo', {}, delay: 100_000) # scheduled
         queue.put('Foo', {}, depends: [jid]) # depends
-      }.to change(queue, :length).from(0).to(4)
+      end.to change(queue, :length).from(0).to(4)
     end
 
     it 'can pause and unpause itself' do

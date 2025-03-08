@@ -1,4 +1,4 @@
-$LOAD_PATH.unshift File.expand_path('../../lib', __FILE__)
+$LOAD_PATH.unshift File.expand_path('../lib', __dir__)
 
 require 'irb/completion'
 
@@ -13,8 +13,8 @@ module StdoutLogger
 end
 
 # Load everything!
-Dir["./lib/**/*.rb"].sort.each do |f|
-  require f.gsub("./lib/", "")
+Dir['./lib/**/*.rb'].sort.each do |f|
+  require f.gsub('./lib/', '')
 end
 
 require 'pp'

@@ -1,5 +1,3 @@
-# Encoding: utf-8
-
 require 'spec_helper'
 require 'yaml'
 require 'qless/queue'
@@ -20,7 +18,7 @@ module Qless
       end
     end
 
-    [:to_s, :inspect].each do |meth|
+    %i[to_s inspect].each do |meth|
       it "returns a human-readable string from ##{meth}" do
         q = Queue.new('queue-name', client)
         string = q.send(meth)
@@ -31,9 +29,11 @@ module Qless
 
     it 'can specify a jid in put and recur' do
       client.queues['foo'].put(
-        Qless::Job, { 'foo' => 'bar' },    jid: 'howdy').should eq('howdy')
+        Qless::Job, { 'foo' => 'bar' },    jid: 'howdy'
+      ).should eq('howdy')
       client.queues['foo'].recur(
-        Qless::Job, { 'foo' => 'bar' }, 5, jid: 'hello').should eq('hello')
+        Qless::Job, { 'foo' => 'bar' }, 5, jid: 'hello'
+      ).should eq('hello')
       client.jobs['howdy'].should be
       client.jobs['hello'].should be
     end
@@ -94,15 +94,15 @@ module Qless
       include_examples 'job options'
     end
 
-    describe "equality" do
+    describe 'equality' do
       it 'is considered equal when the qless client and name are equal' do
         q1 = Qless::Queue.new('foo', client)
         q2 = Qless::Queue.new('foo', client)
 
         expect(q1 == q2).to eq(true)
         expect(q2 == q1).to eq(true)
-        expect(q1.eql? q2).to eq(true)
-        expect(q2.eql? q1).to eq(true)
+        expect(q1.eql?(q2)).to eq(true)
+        expect(q2.eql?(q1)).to eq(true)
 
         expect(q1.hash).to eq(q2.hash)
       end
@@ -113,8 +113,8 @@ module Qless
 
         expect(q1 == q2).to eq(true)
         expect(q2 == q1).to eq(true)
-        expect(q1.eql? q2).to eq(true)
-        expect(q2.eql? q1).to eq(true)
+        expect(q1.eql?(q2)).to eq(true)
+        expect(q2.eql?(q1)).to eq(true)
 
         expect(q1.hash).to eq(q2.hash)
       end
@@ -125,8 +125,8 @@ module Qless
 
         expect(q1 == q2).to eq(false)
         expect(q2 == q1).to eq(false)
-        expect(q1.eql? q2).to eq(false)
-        expect(q2.eql? q1).to eq(false)
+        expect(q1.eql?(q2)).to eq(false)
+        expect(q2.eql?(q1)).to eq(false)
 
         expect(q1.hash).not_to eq(q2.hash)
       end
@@ -137,8 +137,8 @@ module Qless
 
         expect(q1 == q2).to eq(false)
         expect(q2 == q1).to eq(false)
-        expect(q1.eql? q2).to eq(false)
-        expect(q2.eql? q1).to eq(false)
+        expect(q1.eql?(q2)).to eq(false)
+        expect(q2.eql?(q1)).to eq(false)
 
         expect(q1.hash).not_to eq(q2.hash)
       end
@@ -148,7 +148,7 @@ module Qless
         q2 = Class.new(Qless::Queue).new('foo', client)
 
         expect(q1 == q2).to eq(false)
-        expect(q1.eql? q2).to eq(false)
+        expect(q1.eql?(q2)).to eq(false)
         expect(q1.hash).not_to eq(q2.hash)
       end
     end

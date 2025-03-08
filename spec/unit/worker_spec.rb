@@ -1,5 +1,3 @@
-# Encoding: utf-8
-
 # The thing we're testing
 require 'qless/worker'
 
@@ -8,7 +6,6 @@ require 'logger'
 
 # Spec
 require 'spec_helper'
-
 
 module Qless
   describe Workers do
@@ -42,7 +39,8 @@ module Qless
         worker_class.new(
           reserver,
           output: log_output,
-          log_level: Logger::DEBUG)
+          log_level: Logger::DEBUG
+        )
       end
       after(:all) { clear_qless_memoization }
 
@@ -67,7 +65,7 @@ module Qless
         JobClass.stub(:perform) { raise Exception.new('boom') }
         job.should respond_to(:fail).with(2).arguments
         first_line_in_perform_method_regex = /base\.rb:\d+:in `perform'/
-        job.should_receive(:fail) do |group, message|
+        job.should_receive(:fail) do |_group, message|
           last_line = message.split("\n").last
           expect(last_line).to match(first_line_in_perform_method_regex)
         end
@@ -77,7 +75,7 @@ module Qless
       it 'replaces the working directory with `.` in failure backtraces' do
         JobClass.stub(:perform) { raise Exception.new('boom') }
         job.should respond_to(:fail).with(2).arguments
-        job.should_receive(:fail) do |group, message|
+        job.should_receive(:fail) do |_group, message|
           expect(message).not_to include(Dir.pwd)
           expect(message).to include('./lib')
         end
@@ -88,7 +86,7 @@ module Qless
         failure = 'a' * 50_000
         JobClass.stub(:perform) { raise Exception.new(failure) }
         job.should respond_to(:fail).with(2).arguments
-        job.should_receive(:fail) do |group, message|
+        job.should_receive(:fail) do |_group, message|
           expect(message.bytesize).to be < 25_000
         end
         worker.perform(job)
@@ -103,7 +101,7 @@ module Qless
             raise error
           end
           job.should respond_to(:fail).with(2).arguments
-          job.should_receive(:fail) do |group, message|
+          job.should_receive(:fail) do |_group, message|
             expect(message).not_to include(gem_home)
             expect(message).to include('<GEM_HOME>/foo.rb:1')
           end
@@ -143,14 +141,14 @@ module Qless
       end
 
       it 'fails the job if a middleware module raises an error' do
-        worker.extend Module.new {
-          def around_perform(job)
+        worker.extend(Module.new do
+          def around_perform(_job)
             raise 'boom'
           end
-        }
+        end)
         expected_line_number = __LINE__ - 3
         job.should respond_to(:fail).with(2).arguments
-        job.should_receive(:fail) do |group, message|
+        job.should_receive(:fail) do |_group, message|
           message.should include('boom')
           message.should include("#{__file__}:#{expected_line_number}")
         end
@@ -186,7 +184,6 @@ module Qless
 
         expect(worker.log_level).to eq(Logger::DEBUG)
       end
-
     end
 
     describe Workers::SerialWorker do

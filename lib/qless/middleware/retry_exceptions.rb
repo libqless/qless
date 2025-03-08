@@ -1,5 +1,3 @@
-# Encoding: utf-8
-
 module Qless
   module Middleware
     # Auto-retries particular errors using qless-core's internal retry tracking
@@ -11,14 +9,14 @@ module Qless
     module RetryExceptions
       def around_perform(job)
         super
-      rescue *retryable_exception_classes => error
+      rescue *retryable_exception_classes => e
         raise if job.retries_left <= 0
 
         attempt_num = (job.original_retries - job.retries_left) + 1
-        failure = Qless.failure_formatter.format(job, error)
-        job.retry(backoff_strategy.call(attempt_num, error), *failure)
+        failure = Qless.failure_formatter.format(job, e)
+        job.retry(backoff_strategy.call(attempt_num, e), *failure)
 
-        on_retry_callback.call(error, job)
+        on_retry_callback.call(e, job)
       end
 
       def retryable_exception_classes
@@ -39,7 +37,7 @@ module Qless
         @backoff_strategy ||= NO_BACKOFF_STRATEGY
       end
 
-      DEFAULT_ON_RETRY_CALLBACK = lambda { |error, job| }
+      DEFAULT_ON_RETRY_CALLBACK = ->(error, job) {}
       def use_on_retry_callback(&block)
         @on_retry_callback = block if block
       end
@@ -50,14 +48,15 @@ module Qless
 
       # If `factor` is omitted it is set to `delay_seconds` to reproduce legacy
       # behavior.
-      def exponential(delay_seconds, options={})
+      def exponential(delay_seconds, options = {})
         factor = options.fetch(:factor, delay_seconds)
         fuzz_factor = options.fetch(:fuzz_factor, 0)
 
-        lambda do |retry_no, error|
+        lambda do |retry_no, _error|
           unfuzzed = delay_seconds * factor**(retry_no - 1)
           return unfuzzed if fuzz_factor.zero?
-          r = 2 * rand  - 1
+
+          r = 2 * rand - 1
           # r is uniformly distributed in range [-1, 1]
           unfuzzed * (1 + fuzz_factor * r)
         end

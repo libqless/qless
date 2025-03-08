@@ -1,5 +1,3 @@
-# Encoding: utf-8
-
 module Qless
   # A helper for formatting failure messages
   class FailureFormatter
@@ -18,16 +16,17 @@ module Qless
     def format(job, error, lines_to_remove = caller(2))
       group = "#{job.klass_name}:#{error.class}"
       message = "#{truncated_message(error)}\n\n" +
-        "#{format_failure_backtrace(error.backtrace, lines_to_remove)}"
+                "#{format_failure_backtrace(error.backtrace, lines_to_remove)}"
       Failure.new(group, message)
     end
 
-  private
+    private
 
     # TODO: pull this out into a config option.
     MAX_ERROR_MESSAGE_SIZE = 10_000
     def truncated_message(error)
       return error.message if error.message.length <= MAX_ERROR_MESSAGE_SIZE
+
       error.message.slice(0, MAX_ERROR_MESSAGE_SIZE) +
         "\n... (truncated due to length)"
     end

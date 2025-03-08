@@ -1,7 +1,3 @@
-# Encoding: utf-8
-
-require 'thread'
-
 module Qless
   # A class used for subscribing to messages in a thread
   class Subscriber
@@ -48,16 +44,16 @@ module Qless
       @thread.join
     end
 
-  private
+    private
 
     def handle_message(channel, message)
       if channel == @my_channel
-        @listener_redis.unsubscribe(@channel, @my_channel) if message == "disconnect"
+        @listener_redis.unsubscribe(@channel, @my_channel) if message == 'disconnect'
       else
         @message_received_callback.call(self, JSON.parse(message))
       end
-    rescue Exception => error
-      @log.error("Qless::Subscriber") { error }
+    rescue Exception => e
+      @log.error('Qless::Subscriber') { e }
     end
   end
 end

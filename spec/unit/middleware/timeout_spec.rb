@@ -10,7 +10,7 @@ module Qless
           @around_perform_call_counter ||= 0
         end
 
-        def around_perform(job)
+        def around_perform(_job)
           @around_perform_call_counter = (@around_perform_call_counter || 0) + 1
         end
       end
@@ -22,7 +22,7 @@ module Qless
       def make_worker(timeout_class, timeout_seconds, kernel_class)
         Class.new(JobClass) do
           include Qless::Middleware::Timeout.new(timeout_class: timeout_class,
-              kernel_class: kernel_class) { timeout_seconds }
+                                                 kernel_class: kernel_class) { timeout_seconds }
         end.new
       end
 
@@ -33,7 +33,7 @@ module Qless
       end
 
       class InactiveTimeout
-        def self.timeout(timeout_seconds)
+        def self.timeout(_timeout_seconds)
           yield
         end
       end
@@ -42,9 +42,9 @@ module Qless
         it 'allows nil' do
           worker = make_worker(TriggeredTimeout, nil, kernel_class)
 
-          expect {
+          expect do
             worker.around_perform job
-          }.not_to raise_error
+          end.not_to raise_error
         end
 
         it 'invokes job' do
@@ -59,19 +59,19 @@ module Qless
 
       context 'when timeout is not nil' do
         it 'aborts with a clear error when given a non-numeric timeout' do
-          worker = make_worker(TriggeredTimeout, "123", kernel_class)
+          worker = make_worker(TriggeredTimeout, '123', kernel_class)
 
-          expect {
+          expect do
             worker.around_perform job
-          }.to raise_error(Qless::InvalidTimeoutError)
+          end.to raise_error(Qless::InvalidTimeoutError)
         end
 
         it 'aborts with a clear error when given a non-positive timeout' do
           worker = make_worker(TriggeredTimeout, -1, kernel_class)
 
-          expect {
+          expect do
             worker.around_perform job
-          }.to raise_error(Qless::InvalidTimeoutError)
+          end.to raise_error(Qless::InvalidTimeoutError)
         end
 
         it 'invokes job when positive timeout specified' do
@@ -98,35 +98,35 @@ module Qless
         context 'when timeout event detected' do
           it 'rescues ::Timeout::Error in case of timeout' do
             worker = make_worker(TriggeredTimeout, 120, kernel_class)
-            expect {
+            expect do
               worker.around_perform job
-            }.not_to raise_error
+            end.not_to raise_error
           end
 
           it 'reconnects to redis (to recover in case redis causes timeout)' do
             worker = make_worker(TriggeredTimeout, 120, kernel_class)
             expect(job).to receive(:reconnect_to_redis)
-            expect {
+            expect do
               worker.around_perform job
-            }.not_to raise_error
+            end.not_to raise_error
           end
 
           it 'fails the job' do
             worker = make_worker(TriggeredTimeout, 120, kernel_class)
             expect(job).to receive(:fail)
               .with(anything, /Qless: job timeout \(120\) exceeded./)
-            expect {
+            expect do
               worker.around_perform job
-            }.not_to raise_error
+            end.not_to raise_error
           end
 
           context 'when worker does not install RequeueExceptions middleware' do
             it 'does not call neither #requeueable? nor #handle_exception' do
               worker = make_worker(TriggeredTimeout, 120, kernel_class)
 
-              expect {
+              expect do
                 worker.around_perform job
-              }.not_to raise_error
+              end.not_to raise_error
             end
           end
 
@@ -137,9 +137,9 @@ module Qless
               worker.requeue_on JobTimedoutError, delay_range: (1..2), max_attempts: 3
               allow(worker).to receive(:handle_exception).with(job, anything)
 
-              expect {
+              expect do
                 worker.around_perform job
-              }.not_to raise_error
+              end.not_to raise_error
             end
 
             it 'does not requeue job if JobTimedoutError not configured' do
@@ -147,9 +147,9 @@ module Qless
               worker.extend(RequeueExceptions)
               expect(worker).not_to receive(:handle_exception).with(job, anything)
 
-              expect {
+              expect do
                 worker.around_perform job
-              }.not_to raise_error
+              end.not_to raise_error
             end
           end
 
@@ -157,9 +157,9 @@ module Qless
              ' (since `Timeout` can do that)' do
             worker = make_worker(TriggeredTimeout, 120, kernel_class)
             expect(kernel_class).to receive(:exit!)
-            expect {
+            expect do
               worker.around_perform job
-            }.not_to raise_error
+            end.not_to raise_error
           end
         end
       end

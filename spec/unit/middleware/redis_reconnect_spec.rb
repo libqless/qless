@@ -1,5 +1,3 @@
-# Encoding: utf-8
-
 require 'spec_helper'
 require 'qless/middleware/redis_reconnect'
 require 'redis'
@@ -17,14 +15,16 @@ module Qless
         middleware = Qless::Middleware::RedisReconnect.new(redis_1, redis_2)
 
         expect(
-          middleware.inspect).to include('Qless::Middleware::RedisReconnect')
+          middleware.inspect
+        ).to include('Qless::Middleware::RedisReconnect')
         expect(
-          middleware.to_s).to include('Qless::Middleware::RedisReconnect')
+          middleware.to_s
+        ).to include('Qless::Middleware::RedisReconnect')
       end
 
       def define_job_class(events)
         stub_const('MyJob', Class.new do
-          define_singleton_method :perform do |job|
+          define_singleton_method :perform do |_job|
             events << :performed
           end
         end)
@@ -47,7 +47,7 @@ module Qless
         worker.extend Qless::Middleware::RedisReconnect.new(*redis_connections)
         worker.perform(Qless::Job.build(double.as_null_object, MyJob))
 
-        expect(events).to eq([:reconnect_0, :reconnect_1, :performed])
+        expect(events).to eq(%i[reconnect_0 reconnect_1 performed])
       end
 
       it 'allows the redis connections to be picked based on job data' do
@@ -55,25 +55,27 @@ module Qless
         worker = Qless::Workers::BaseWorker.new(double)
         redis_connections = create_redis_connections(4, events)
 
-        worker.extend Qless::Middleware::RedisReconnect.new { |job|
+        worker.extend(Qless::Middleware::RedisReconnect.new do |job|
           if job.data['type'] == 'evens'
             [redis_connections[0], redis_connections[2]]
           else
             [redis_connections[1], redis_connections[3]]
           end
-        }
+        end)
 
         even_job = Qless::Job.build(
-          double.as_null_object, MyJob, data: { 'type' => 'evens' })
-        odd_job  = Qless::Job.build(
-          double.as_null_object, MyJob, data: { 'type' => 'odds'  })
+          double.as_null_object, MyJob, data: { 'type' => 'evens' }
+        )
+        odd_job = Qless::Job.build(
+          double.as_null_object, MyJob, data: { 'type' => 'odds'  }
+        )
 
         worker.perform(even_job)
-        expect(events).to eq([:reconnect_0, :reconnect_2, :performed])
+        expect(events).to eq(%i[reconnect_0 reconnect_2 performed])
 
         worker.perform(odd_job)
-        expect(events).to eq([:reconnect_0, :reconnect_2, :performed,
-                              :reconnect_1, :reconnect_3, :performed])
+        expect(events).to eq(%i[reconnect_0 reconnect_2 performed
+                                reconnect_1 reconnect_3 performed])
       end
 
       it 'allows the block to return a single redis connection' do
@@ -81,12 +83,12 @@ module Qless
         worker = Qless::Workers::BaseWorker.new(double)
         redis_connections = create_redis_connections(1, events)
 
-        worker.extend Qless::Middleware::RedisReconnect.new { |job|
+        worker.extend(Qless::Middleware::RedisReconnect.new do |_job|
           redis_connections.first
-        }
+        end)
         worker.perform(Qless::Job.build(double.as_null_object, MyJob))
 
-        expect(events).to eq([:reconnect_0, :performed])
+        expect(events).to eq(%i[reconnect_0 performed])
       end
     end
   end

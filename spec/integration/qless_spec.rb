@@ -1,5 +1,3 @@
-# Encoding: utf-8
-
 # The things we're testing
 require 'qless'
 
@@ -36,14 +34,14 @@ module Qless
         # Pop a job and we have some information
         queue.pop
         expect(client.workers.counts).to eq([{
-          'name'    => queue.worker_name,
-          'jobs'    => 1,
-          'stalled' => 0
-        }])
+                                              'name' => queue.worker_name,
+                                              'jobs' => 1,
+                                              'stalled' => 0
+                                            }])
         expect(client.workers[queue.worker_name]).to eq({
-          'jobs'    => ['jid'],
-          'stalled' => {}
-        })
+                                                          'jobs' => ['jid'],
+                                                          'stalled' => {}
+                                                        })
       end
 
       it 'can deregister workers' do
@@ -72,9 +70,9 @@ module Qless
 
     it 'exposes top tags' do
       10.times do
-        queue.put('Foo', {}, tags: %w{foo bar whiz})
+        queue.put('Foo', {}, tags: %w[foo bar whiz])
       end
-      expect(client.tags.to_set).to eq(%w{foo bar whiz}.to_set)
+      expect(client.tags.to_set).to eq(%w[foo bar whiz].to_set)
     end
 
     it 'shows empty tagged jobs as an array' do

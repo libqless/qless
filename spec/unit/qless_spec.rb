@@ -1,5 +1,3 @@
-# Encoding: utf-8
-
 require 'spec_helper'
 require 'qless'
 
@@ -39,7 +37,8 @@ describe Qless do
     it 'raises an error if the redis version is too low' do
       redis.stub(info: { 'redis_version' => '2.5.3' })
       expect { Qless::Client.new }.to raise_error(
-        Qless::UnsupportedRedisVersionError)
+        Qless::UnsupportedRedisVersionError
+      )
     end
 
     it 'does not raise an error if the redis version is sufficient' do
@@ -75,37 +74,37 @@ describe Qless do
     end
   end
 
-  describe "equality semantics" do
+  describe 'equality semantics' do
     it 'is considered equal to another instance connected to the same redis DB' do
-      client1 = Qless::Client.new(redis: redis_double(id: "redis://foo.com:1/1"))
-      client2 = Qless::Client.new(redis: redis_double(id: "redis://foo.com:1/1"))
+      client1 = Qless::Client.new(redis: redis_double(id: 'redis://foo.com:1/1'))
+      client2 = Qless::Client.new(redis: redis_double(id: 'redis://foo.com:1/1'))
 
       expect(client1 == client2).to eq(true)
       expect(client2 == client1).to eq(true)
-      expect(client1.eql? client2).to eq(true)
-      expect(client2.eql? client1).to eq(true)
+      expect(client1.eql?(client2)).to eq(true)
+      expect(client2.eql?(client1)).to eq(true)
 
       expect(client1.hash).to eq(client2.hash)
     end
 
     it 'is not considered equal to another instance connected to a different redis DB' do
-      client1 = Qless::Client.new(redis: redis_double(id: "redis://foo.com:1/1"))
-      client2 = Qless::Client.new(redis: redis_double(id: "redis://foo.com:1/2"))
+      client1 = Qless::Client.new(redis: redis_double(id: 'redis://foo.com:1/1'))
+      client2 = Qless::Client.new(redis: redis_double(id: 'redis://foo.com:1/2'))
 
       expect(client1 == client2).to eq(false)
       expect(client2 == client1).to eq(false)
-      expect(client1.eql? client2).to eq(false)
-      expect(client2.eql? client1).to eq(false)
+      expect(client1.eql?(client2)).to eq(false)
+      expect(client2.eql?(client1)).to eq(false)
 
       expect(client1.hash).not_to eq(client2.hash)
     end
 
     it 'is not considered equal to other types of objects' do
-      client1 = Qless::Client.new(redis: redis_double(id: "redis://foo.com:1/1"))
-      client2 = Class.new(Qless::Client).new(redis: redis_double(id: "redis://foo.com:1/1"))
+      client1 = Qless::Client.new(redis: redis_double(id: 'redis://foo.com:1/1'))
+      client2 = Class.new(Qless::Client).new(redis: redis_double(id: 'redis://foo.com:1/1'))
 
       expect(client1 == client2).to eq(false)
-      expect(client1.eql? client2).to eq(false)
+      expect(client1.eql?(client2)).to eq(false)
       expect(client1.hash).not_to eq(client2.hash)
     end
   end

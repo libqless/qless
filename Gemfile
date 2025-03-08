@@ -13,7 +13,6 @@ group :development do
   gem 'poltergeist', '~> 1.0.0'
   gem 'pry'
   gem 'pry-byebug', :platforms => [:ruby_20, :ruby_21]
-  gem 'pry-stack_explorer'
   gem 'rake'
   gem 'rspec'
   gem 'rspec-fire'

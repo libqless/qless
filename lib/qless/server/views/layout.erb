@@ -13,7 +13,8 @@
     <link href="<%= u '/css/jquery.noty.css' %>" rel="stylesheet">
     <link href="<%= u '/css/noty_theme_twitter.css' %>" rel="stylesheet">
     <link href="<%= u '/css/style.css' %>" rel="stylesheet">
-    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js" type="text/javascript"></script>
+    <link href="<%= u '/css/failed-jobs-list.css' %>" rel="stylesheet">
+    <script src="<%= u '/js/jquery-1.7.1.min.js' %>"></script>
 
     <style type="text/css">
     body {
@@ -67,7 +68,7 @@
      * in a vein similar to that of Ruby's flash */
     var flash = function(message, t, duration) {
       var noty_id = noty({
-        text   : '<strong>' + message + '</strong>',
+        text   : $('<strong/>').text(message),
         layout : 'top',
         type   : t || 'error',
         theme  : 'noty_theme_twitter',
@@ -91,7 +92,7 @@
      * flash a message to that effect on the page */
     var move = function(jid, queue, cb) {
       _ajax({
-        url: '<%= u "/move" %>',
+        url: <%== u("/move").to_json %>,
         data: {id:jid, queue:queue},
         success: function() { flash('Moved ' + jid + ' to ' + queue, 'success', 1500); cb(jid, queue); },
         error:   function() { flash('Failed to move ' + jid + ' to ' + queue); }
@@ -101,7 +102,7 @@
     /* Helper function for retrying a job */
     var retry = function(jid, cb) {
       _ajax({
-        url: '<%= u "/retry" %>',
+        url: <%== u("/retry").to_json %>,
         data: {id:jid},
         success: function() { flash('Retrying ' + jid, 'success', 1500); if (cb) { cb(jid, 'retry'); } },
         error:   function() { flash('Failed to retry ' + jid); }
@@ -111,7 +112,7 @@
     /* This is a helper method to cancel a job */
     var cancel = function(jid, cb) {
       _ajax({
-        url: '<%= u "/cancel" %>',
+        url: <%== u("/cancel").to_json %>,
         data: [jid],
         success: function() { flash('Canceled ' + jid, null, 1500); if (cb) { cb(jid, 'cancel'); } },
         error:   function() { flash('Failed to cancel ' + jid); }
@@ -121,7 +122,7 @@
     /* This is a helper method to untrack a job */
     var untrack = function(jid, cb) {
       _ajax({
-        url: '<%= u "/untrack" %>',
+        url: <%== u("/untrack").to_json %>,
         data: [jid],
         success: function() { flash('Stopped tracking ' + jid, 'success', 1500); if (cb) { cb(jid, 'untrack'); }  },
         error:   function() { flash('Failed to track ' + jid); }
@@ -131,7 +132,7 @@
     /* This is a helper to start tracking a job, with tags */
     var track = function(jid, tags, cb) {
       _ajax({
-        url: '<%= u "/track" %>',
+        url: <%== u("/track").to_json %>,
         data: {id:jid, tags:(tags || [])},
         success: function() { flash('Now tracking ' + jid, 'success', 1500); if (cb) { cb(jid, 'track'); }  },
         error:   function() { flash('Failed to track ' + jid); }
@@ -141,7 +142,7 @@
     /* This is a helper to retry all jobs of a certain failure type */
     var retryall = function(type, cb) {
       _ajax({
-        url: '<%= u "/retryall" %>',
+        url: <%== u("/retryall").to_json %>,
         data: {type: type},
         success: function(response) {
           flash('Retrying failures of type ' + type, 'success', 1500);
@@ -158,7 +159,7 @@
     /* This is a helper to cancel all jobs of a certain failure type */
     var cancelall = function(type, cb) {
       _ajax({
-        url: '<%= u "/cancelall" %>',
+        url: <%== u("/cancelall").to_json %>,
         data: {type: type},
         success: function(response) {
           flash('Canceling failures of type ' + type, 'success', 1500);
@@ -175,7 +176,7 @@
     /* This is a helper to remove job dependencies */
     var undepend = function(jid, dependency, cb) {
       _ajax({
-        url: '<%= u "/undepend" %>',
+        url: <%== u("/undepend").to_json %>,
         data: {id:jid, dependency:dependency},
         success: function() { flash(jid + ' no longer depends on ' + dependency, 'success', 1500); if (cb) { cb(jid, 'undepend'); }  },
         error:   function() { flash('Failed to remove ' + jid + '\'s dependency on ' + dependency); }
@@ -216,7 +217,7 @@
       // The button group of the 'add tag' bit
       var group =
       _ajax({
-        url: '<%= u "/tag" %>',
+        url: <%== u("/tag").to_json %>,
         data: data,
         success : function() {
           var div  = $('<div>').attr('class', 'btn-group').attr('style', 'float:left');
@@ -240,7 +241,7 @@
       // The button group of the 'add tag' bit
       var group =
       _ajax({
-        url: '<%= u "/untag" %>',
+        url: <%== u("/untag").to_json %>,
         data: data,
         success : function() {
           $("#job-" + jid).find('.tag').filter(function() {
@@ -261,7 +262,7 @@
         var data = {};
         data[jid] = priority;
         _ajax({
-          url: '<%= u "/priority" %>',
+          url: <%== u("/priority").to_json %>,
           data: data,
           success : function(data) {
             if (data[jid] != 'failed' && data[jid] != null) {
@@ -282,36 +283,46 @@
       }
     }
 
-    var pause = function(queue) {
+    var pause = function(button) {
+      var button = $(button);
+      var queue = button.attr('data-queue');
+
       _ajax({
-        url: '<%= u "/pause" %>',
+        url: <%== u("/pause").to_json %>,
         data: {
           'queue': queue
         }, success: function(data) {
-          var button = $('#' + queue + '-pause');
-          button.attr('title', 'Unpause').attr(
-            'data-original-title', 'Unpause');
-          button.addClass('btn-success').removeClass('btn-warning');
-          button.children().addClass('icon-play').removeClass('icon-pause');
-          button.attr('onclick', 'unpause("' + queue + '")');
+          button.attr({
+            'title': 'Unpause',
+            'data-original-title': 'Unpause',
+            'onclick': 'unpause(this)',
+            'class': 'btn btn-success'
+          });
+
+          button.children().attr('class', 'icon-play');
         }, error: function() {
           flash('Couldn\'t pause queue ' + queue);
         }
       })
     }
 
-    var unpause = function(queue) {
+    var unpause = function(button) {
+      var button = $(button);
+      var queue = button.attr('data-queue');
+
       _ajax({
-        url: '<%= u "/unpause" %>',
+        url: <%== u("/unpause").to_json %>,
         data: {
           'queue': queue
         }, success: function(data) {
-          var button = $('#' + queue + '-pause');
-          button.attr('title', 'Pause').attr(
-            'data-original-title', 'Pause');
-          button.addClass('btn-warning').removeClass('btn-success');
-          button.children().addClass('icon-pause').removeClass('icon-play');
-          button.attr('onclick', 'pause("' + queue + '")');
+          button.attr({
+            'title': 'Pause',
+            'data-original-title': 'Pause',
+            'onclick': 'pause(this)',
+            'class': 'btn btn-warning'
+          });
+
+          button.children().attr('class', 'icon-pause');
         }, error: function() {
           flash('Couldn\'t unpause queue ' + queue);
         }
@@ -320,7 +331,7 @@
 
     var timeout = function(jid) {
       _ajax({
-        url: '<%= u "/timeout" %>',
+        url: <%== u("/timeout").to_json %>,
         data: {
           'jid': jid
         }, success: function(data) {
@@ -359,7 +370,7 @@
           <div class="nav-collapse">
             <ul class="nav nav-bar">
             <% tabs.each do |tab| %>
-              <li><a href='<%= u tab[:path] %>'><%= tab[:name] %></a></li>
+              <li><a href="<%= u tab[:path] %>"><%= tab[:name] %></a></li>
             <% end %>
             </ul>
             <ul class="nav nav-bar pull-right">
@@ -375,7 +386,7 @@
     </div>
 
       <div class="container">
-      <%= yield %>
+      <%== yield %>
       <!-- <footer class="footer">
         <p>Powered by <a href="http://github.com/seomoz/qless">qless</a> v<%=Qless::VERSION%></p>
       </footer> -->

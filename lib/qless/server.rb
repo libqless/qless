@@ -3,6 +3,7 @@
 
 require 'sinatra/base'
 require 'qless'
+require 'erubi'
 
 module Qless
   # The Qless web interface
@@ -17,6 +18,10 @@ module Qless
 
     # I'm not sure what this option is -- I'll look it up later
     # set :static, true
+
+    set :erb, escape_html: true
+
+    set :show_exceptions, false
 
     attr_reader :client
 
@@ -153,6 +158,10 @@ module Qless
           formatted
         end
       end
+    end
+
+    before do
+      halt 422 unless request.get? || request.xhr?
     end
 
     get '/?' do
@@ -294,17 +303,9 @@ module Qless
       job = client.jobs[data['id']]
       if !job.nil?
         data.fetch('tags', false) ? job.track(*data['tags']) : job.track
-        if request.xhr?
-          json({ tracked: [job.jid] })
-        else
-          redirect to('/track')
-        end
+        json({ tracked: [job.jid] })
       else
-        if request.xhr?
-          json({ tracked: [] })
-        else
-          redirect to(request.referrer)
-        end
+        json({ tracked: [] })
       end
     end
 
@@ -468,11 +469,7 @@ module Qless
         job.cancel
       end
 
-      if request.xhr?
-        return json({ canceled: jobs.map { |job| job.jid } })
-      else
-        redirect to(request.referrer)
-      end
+      return json({ canceled: jobs.map { |job| job.jid } })
     end
 
     post '/cancelall/?' do

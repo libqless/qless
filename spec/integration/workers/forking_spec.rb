@@ -11,7 +11,7 @@ module Qless
     include_context "forking worker"
 
     context 'when the parent process is killed with a TERM signal' do
-      around(:each) { |example| timeout(10) { example.run } }
+      around(:each) { |example| Timeout.timeout(10) { example.run } }
 
       let(:worker_program) {
         '$stdout.sync = true;' \

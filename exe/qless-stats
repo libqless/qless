@@ -5,7 +5,7 @@ require 'statsd'
 require 'thor'
 
 class Stats < Thor
-  class_option :redis, default: 'redis://localhost:6379/0'
+  class_option :redis, default: 'redis://redis:6379/0'
   class_option :interval, type: :numeric, default: 60,
                           desc: 'Interval (in seconds) between stats collections'
   class_option :count, type: :numeric, default: 0,

@@ -1,4 +1,4 @@
-source 'http://rubygems.org'
+source 'https://rubygems.org'
 
 # Specify your gem's dependencies in qless.gemspec
 gemspec
@@ -12,7 +12,7 @@ group :development do
   gem 'cane', platforms: %i[ruby_20 ruby_21]
   gem 'poltergeist', '~> 1.0.0'
   gem 'pry'
-  gem 'pry-byebug', platforms: %i[ruby_20 ruby_21]
+  gem 'pry-byebug'
   gem 'rake'
   gem 'rspec'
   gem 'rspec-fire'

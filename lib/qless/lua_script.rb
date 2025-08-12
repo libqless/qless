@@ -6,13 +6,16 @@ module Qless
 
   # Wraps a lua script. Knows how to reload it if necessary
   class LuaScript
-    attr_reader :script_contents
+    attr_reader :sha, :name, :redis
 
     def initialize(name, redis)
       @name  = name
       @redis = redis
-      @sha   = QlessLua::SOURCE_SHA
-      @script_contents = QlessLua::SOURCE
+      @sha = Digest::SHA1.hexdigest(script_contents)
+    end
+
+    def script_contents
+      @script_contents ||= QlessLua::QLESS_SOURCE
     end
 
     def reload
@@ -24,8 +27,8 @@ module Qless
         _call(*argv)
       end
     rescue Redis::CommandError => e
-      raise LuaScriptError.new(match[1]) if e.message.match('user_script:\d+:\s*(\w+.+$)')
-
+      match = e.message.match('user_script:\d+:\s*(\w+.+$)')
+      raise LuaScriptError.new(match[1]) if match
       raise e
     end
 
@@ -64,10 +67,9 @@ module Qless
   # Qless's lua API.
   class LuaPlugin < LuaScript
     COMMENT_LINES_RE = /^\s*--.*$\n?/
+    QLESS_LIB_CONTENTS = QlessLua::QLESS_LIB_SOURCE.gsub(COMMENT_LINES_RE, '')
 
     def initialize(name, redis, plugin_contents)
-      @name  = name
-      @redis = redis
       @plugin_contents = plugin_contents.gsub(COMMENT_LINES_RE, '')
       super(name, redis)
     end
@@ -75,7 +77,7 @@ module Qless
     private
 
     def script_contents
-      @script_contents ||= [super, @plugin_contents].join("\n\n")
+      @script_contents ||= [QLESS_LIB_CONTENTS, @plugin_contents].join("\n\n")
     end
   end
 end

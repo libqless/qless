@@ -9,6 +9,8 @@ end
 
 require 'rspec/fire'
 
+require 'byebug'
+
 module QlessSpecHelpers
   def with_env_vars(vars)
     original = ENV.to_hash
@@ -38,15 +40,17 @@ module RedisHelpers
   def redis_config
     return @redis_config unless @redis_config.nil?
 
-    @redis_config = if File.exist?('./spec/redis.config.yml')
-                      YAML.load_file('./spec/redis.config.yml')
-                    else
-                      {}
-                    end
+    redis_url = ENV['REDIS_URL'] || 'redis://redis:6379/0'
+    parsed_url = URI.parse(redis_url)
+    @redis_config = {
+      host: parsed_url.host,
+      port: parsed_url.port,
+      db: parsed_url.path.split('/').last.to_i
+    }.freeze
   end
 
   def redis_url
-    return 'redis://localhost:6379/0' if redis_config.empty?
+    return 'redis://redis:6379/0' if redis_config.empty?
 
     c = redis_config
     "redis://#{c[:host]}:#{c[:port]}/#{c.fetch(:db, 0)}"

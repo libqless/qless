@@ -59,7 +59,7 @@ module Qless
           order.dup
         end.uniq
 
-        expect(uniq_orders).to have_at_least(3).different_orders
+        expect(uniq_orders.size).to be > 3
       end
 
       it 'does not change the passed queue list as a side effect' do
@@ -77,9 +77,12 @@ module Qless
         it 'reshuffles the queues' do
           reserver = new_reserver
 
-          uniq_orders = 10.times.map { reserver.prep_for_work! }
+          uniq_orders = 10.times.map do
+            reserver.prep_for_work!
+            reserver.queues
+          end.uniq
 
-          expect(uniq_orders).to have_at_least(3).different_orders
+          expect(uniq_orders.size).to be > 3
         end
 
         it 'resets the description to match the new queue ordering' do

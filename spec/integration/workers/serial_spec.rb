@@ -197,6 +197,7 @@ module Qless
 
       it 'fails the job with an error containing the job backtrace' do
         pending('I do not think this is actually the desired behavior')
+        expect(true).to be(false)
       end
     end
 
@@ -223,6 +224,7 @@ module Qless
                   jid: 'jid', retries: 10)
         run_jobs(worker, 1) do
           redis.brpop(key, timeout: 1).should eq([key.to_s, 'foo'])
+          # FIXME: this seems to get into infinite loop sometimes
           until client.jobs['jid'].state == 'waiting'; end
         end
         expect(client.jobs['jid'].retries_left).to be < 10

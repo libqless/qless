@@ -167,6 +167,7 @@ module Qless
     context 'when a job times out', :uses_threads do
       it 'fails the job with an error containing the job backtrace' do
         pending('I do not think this is actually the desired behavior')
+        expect(true).to be(false)
       end
     end
   end

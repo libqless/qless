@@ -22,8 +22,8 @@ module Qless
       it "returns a human-readable string from ##{meth}" do
         q = Queue.new('queue-name', client)
         string = q.send(meth)
-        string.should have_at_most(100).characters
-        string.should include('queue-name')
+        expect(string.length).to be <= 100
+        expect(string).to include('queue-name')
       end
     end
 

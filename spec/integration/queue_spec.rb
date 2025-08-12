@@ -96,7 +96,9 @@ module Qless
     end
 
     it 'can optionally stop all running jobs when pausing' do
+      # TODO: what this means?
       pending('this is specific to ruby')
+      expect(true).to be(false)
     end
 
     it 'exposes max concurrency' do

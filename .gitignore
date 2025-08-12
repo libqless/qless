@@ -16,3 +16,4 @@ phantomjs/
 
 .rspec-local
 .byebug_history
+tmp

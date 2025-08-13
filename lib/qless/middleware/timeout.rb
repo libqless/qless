@@ -34,7 +34,8 @@ module Qless
               timeout_class.timeout(timeout_seconds) { super(job) }
             rescue ::Timeout::Error => e
               error = JobTimedoutError.new("Qless: job timeout (#{timeout_seconds}) exceeded.")
-              error.set_backtrace(e.backtrace)
+              # backtrace from cause shows where the timeout happened so we use it if available
+              error.set_backtrace(e.cause&.backtrace || e.backtrace)
               # The stalled connection to redis might be the cause of the timeout. We cannot rely
               # on state of connection either (e.g., we might be in the middle of Redis call when
               # timeout happend). To play it safe, we reconnect.

@@ -20,9 +20,12 @@ module Qless
       end
     end
 
+    let(:listener_thread_started) { ::Thread::Queue.new }
+
     # This is a thread that listens for events and makes note of them
-    let!(:thread) do
+    let(:listener_thread) do
       Thread.new do
+        listener_thread_started.push(true)
         pubsub.events.listen do |on|
           # Listen for each event, and put the message into the queue
           %i[canceled completed failed
@@ -32,12 +35,15 @@ module Qless
             end
           end
         end
-      end.tap { |t| t.join(0.01) }
+      end
     end
+
+    # Give listener thread a chance to start before cheking things
+    before { listener_thread.join(0.1); listener_thread_started.pop }
 
     # Wait until all the threads have sent their events
     def jids_for_event(event)
-      thread.join(0.1)
+      listener_thread.join(0.1)
       events[event]
     end
 

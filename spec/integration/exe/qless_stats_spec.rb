@@ -2,6 +2,7 @@ require 'json'
 require 'socket'
 require 'tempfile'
 
+require 'qless'
 require 'spec_helper'
 
 describe 'qless-stats', :integration do
@@ -41,7 +42,7 @@ describe 'qless-stats', :integration do
 
       let(:messages) do
         get_statsd_messages do
-          run('statsd', '--count=1')
+          run('statsd', '--count=1', '--host=127.0.0.1')
         end
       end
 

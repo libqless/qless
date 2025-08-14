@@ -16,22 +16,25 @@ PATH
 GEM
   remote: https://rubygems.org/
   specs:
+    addressable (2.8.7)
+      public_suffix (>= 2.0.2, < 7.0)
     ast (2.4.3)
     atomic (1.1.101)
     avl_tree (1.2.1)
       atomic (~> 1.1)
+    base64 (0.3.0)
     byebug (12.0.0)
     cane (3.0.0)
       parallel
-    capybara (1.1.4)
-      mime-types (>= 1.16)
-      nokogiri (>= 1.3.3)
-      rack (>= 1.0.0)
-      rack-test (>= 0.5.4)
-      selenium-webdriver (~> 2.0)
-      xpath (~> 0.1.4)
-    childprocess (0.9.0)
-      ffi (~> 1.0, >= 1.0.11)
+    capybara (3.40.0)
+      addressable
+      matrix
+      mini_mime (>= 0.1.3)
+      nokogiri (~> 1.11)
+      rack (>= 1.6.0)
+      rack-test (>= 0.6.3)
+      regexp_parser (>= 1.5, < 3.0)
+      xpath (~> 3.2)
     coderay (1.1.3)
     columnize (0.9.0)
     daemons (1.4.1)
@@ -45,34 +48,21 @@ GEM
     docile (1.4.1)
     erubi (1.13.1)
     eventmachine (1.2.7)
-    faye-websocket (0.4.7)
-      eventmachine (>= 0.12.0)
-    ffi (1.17.2-aarch64-linux-gnu)
-    ffi (1.17.2-aarch64-linux-musl)
-    ffi (1.17.2-arm-linux-gnu)
-    ffi (1.17.2-arm-linux-musl)
-    ffi (1.17.2-arm64-darwin)
-    ffi (1.17.2-x86_64-darwin)
-    ffi (1.17.2-x86_64-linux-gnu)
-    ffi (1.17.2-x86_64-linux-musl)
     hitimes (1.3.1)
-    http_parser.rb (0.5.3)
     json (2.13.2)
     language_server-protocol (3.17.0.5)
     lint_roller (1.1.0)
     logger (1.7.0)
+    matrix (0.4.3)
     method_source (1.1.0)
     metriks (0.9.9.8)
       atomic (~> 1.0)
       avl_tree (~> 1.2.0)
       hitimes (~> 1.1)
-    mime-types (3.7.0)
-      logger
-      mime-types-data (~> 3.2025, >= 3.2025.0507)
-    mime-types-data (3.2025.0805)
-    multi_json (1.17.0)
+    mini_mime (1.1.5)
     mustermann (2.0.2)
       ruby2_keywords (~> 0.0.1)
+    nio4r (2.7.4)
     nokogiri (1.18.9-aarch64-linux-gnu)
       racc (~> 1.4)
     nokogiri (1.18.9-aarch64-linux-musl)
@@ -93,12 +83,6 @@ GEM
     parser (3.3.9.0)
       ast (~> 2.4.1)
       racc
-    poltergeist (1.0.3)
-      capybara (~> 1.1)
-      childprocess (~> 0.3)
-      faye-websocket (~> 0.4.4)
-      http_parser.rb (~> 0.5.3)
-      multi_json (~> 1.0)
     prism (1.4.0)
     pry (0.15.2)
       coderay (~> 1.1)
@@ -106,6 +90,9 @@ GEM
     pry-byebug (3.11.0)
       byebug (~> 12.0)
       pry (>= 0.13, < 0.16)
+    public_suffix (6.0.2)
+    puma (6.6.1)
+      nio4r (~> 2.0)
     qless_lua (1.1.0)
     racc (1.8.1)
     rack (2.2.17)
@@ -117,6 +104,7 @@ GEM
     rake (13.3.0)
     redis (4.4.0)
     regexp_parser (2.11.1)
+    rexml (3.2.6)
     rspec (3.13.1)
       rspec-core (~> 3.13.0)
       rspec-expectations (~> 3.13.0)
@@ -148,11 +136,13 @@ GEM
       prism (~> 1.4)
     ruby-progressbar (1.13.0)
     ruby2_keywords (0.0.5)
-    rubyzip (1.3.0)
+    rubyzip (3.0.1)
     rusage (0.2.0)
-    selenium-webdriver (2.53.4)
-      childprocess (~> 0.5)
-      rubyzip (~> 1.0)
+    selenium-webdriver (4.35.0)
+      base64 (~> 0.2)
+      logger (~> 1.4)
+      rexml (~> 3.2, >= 3.2.5)
+      rubyzip (>= 1.2.2, < 4.0)
       websocket (~> 1.0)
     simplecov (0.22.0)
       docile (~> 1.1)
@@ -179,8 +169,8 @@ GEM
     vegas (0.1.11)
       rack (>= 1.0.0)
     websocket (1.2.11)
-    xpath (0.1.4)
-      nokogiri (~> 1.3)
+    xpath (3.2.0)
+      nokogiri (~> 1.8)
 
 PLATFORMS
   aarch64-linux-gnu
@@ -195,15 +185,18 @@ PLATFORMS
 DEPENDENCIES
   byebug
   cane
+  capybara
   debugger
-  poltergeist (~> 1.0.0)
   pry
   pry-byebug
+  puma
   qless!
   rake
+  rexml
   rspec
   rspec-fire
   rubocop
+  selenium-webdriver
   simplecov
   thin
   timecop

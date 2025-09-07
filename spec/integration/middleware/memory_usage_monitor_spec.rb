@@ -4,7 +4,6 @@ require 'qless/middleware/memory_usage_monitor'
 
 module Qless
   module Middleware
-    # FIXME: This spec is flaky
     describe MemoryUsageMonitor do
       include_context 'forking worker'
 
@@ -43,13 +42,19 @@ module Qless
             end
           end
 
+          # initial job should have less memory than max_memory
+          expect(job_records[0].after_mem).to be < max_memory
+
           # the second job should increase mem growth but be the same pid.
           expect(job_records[1].pid).to eq(job_records[0].pid)
-          expect(job_records[1].before_mem).to be > job_records[0].before_mem
+          expect(job_records[1].before_mem).to be_within(5).percent_of(job_records[0].after_mem)
+          expect(job_records[1].after_mem).to be > job_records[1].before_mem
+          expect(job_records[1].after_mem).to be > max_memory
 
-          # the third job sould be a new process with cleared out memory
+          # the third job should be a new process with cleared out memory
           expect(job_records[2].pid).not_to eq(job_records[0].pid)
-          expect(job_records[2].before_mem).to be_within(5).percent_of(job_records[1].before_mem)
+          expect(job_records[2].before_mem).to be_within(5).percent_of(job_records[0].before_mem)
+          expect(job_records[2].after_mem).to be < max_memory
 
           expect(log_io.string).to match(/Exiting after job 2/)
         end
@@ -92,14 +97,12 @@ module Qless
             def self.bloat_memory(original_mem, target)
               current_mem = original_mem
 
-              while current_mem < target
-                SecureRandom.hex(
-                  # The * 100 is based on experimentation, taking into account
-                  # the fact that target/current are in KB
-                  (target - current_mem) * 100
-                ).to_sym # symbols are never GC'd.
+              # Keep allocations alive across jobs in the same child process.
+              @__bloat__ ||= []
 
-                print '.'
+              # Allocate ~512KB chunks until we reach the target.
+              while current_mem < target
+                @__bloat__ << 'x' * (512 * 1024)
                 current_mem = Qless::Middleware::MemoryUsageMonitor.current_usage_in_kb
               end
 

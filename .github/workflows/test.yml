@@ -11,11 +11,16 @@ concurrency:
 
 jobs:
   test:
-    name: ${{ matrix.redis-version }}
+    name: "ruby ${{ matrix.ruby-version }} | redis ${{ matrix.redis-version }}"
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
+        redis-version:
+          - "redis:7"
+          - "redis:8"
+          - "valkey/valkey:7.2"
+          - "valkey/valkey:8.0"
         ruby-version:
           - "2.7"
           - "3.0"

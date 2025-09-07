@@ -40,7 +40,7 @@ module RedisHelpers
   def redis_config
     return @redis_config unless @redis_config.nil?
 
-    redis_url = ENV['REDIS_URL'] || 'redis://redis:6379/0'
+    redis_url = ENV['REDIS_URL'] || 'redis://localhost:6379/0'
     parsed_url = URI.parse(redis_url)
     @redis_config = {
       host: parsed_url.host,
@@ -50,7 +50,7 @@ module RedisHelpers
   end
 
   def redis_url
-    return 'redis://redis:6379/0' if redis_config.empty?
+    return 'redis://localhost:6379/0' if redis_config.empty?
 
     c = redis_config
     "redis://#{c[:host]}:#{c[:port]}/#{c.fetch(:db, 0)}"

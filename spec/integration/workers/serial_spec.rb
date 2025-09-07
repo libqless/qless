@@ -224,8 +224,16 @@ module Qless
                   jid: 'jid', retries: 10)
         run_jobs(worker, 1) do
           redis.brpop(key, timeout: 1).should eq([key.to_s, 'foo'])
-          # FIXME: this seems to get into infinite loop sometimes
-          until client.jobs['jid'].state == 'waiting'; end
+          # Wait for job to transition to 'waiting' state with timeout protection
+          max_attempts = 500  # 5 seconds with 10ms intervals
+          attempts = 0
+          until client.jobs['jid'].state == 'waiting'
+            attempts += 1
+            if attempts > max_attempts
+              raise "Job never reached 'waiting' state. Current state: #{client.jobs['jid'].state}"
+            end
+            sleep 0.01
+          end
         end
         expect(client.jobs['jid'].retries_left).to be < 10
       end

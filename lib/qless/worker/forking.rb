@@ -122,7 +122,14 @@ module Qless
           break if @shutdown
 
           # Wait for any child to kick the bucket
-          pid, status = Process.wait2
+          pid, status = Process.wait2(-1, Process::WNOHANG)
+
+          if pid.nil?
+            break if @shutdown
+            sleep 0.01
+            next
+          end
+
           code = status.exitstatus
           sig = status.stopsig
           log((code == 0 ? :info : :warn),
@@ -196,7 +203,11 @@ module Qless
 
         until @sandboxes.empty?
           begin
-            pid, = Process.wait2
+            pid, = Process.wait2(-1, Process::WNOHANG)
+            if pid.nil?
+              sleep 0.01
+              next
+            end
             log(:warn, "Child #{pid} stopped") unless in_signal_handler
             @sandboxes.delete(pid)
           rescue SystemCallError

@@ -136,6 +136,7 @@ module Qless
               "Worker process #{pid} died with #{code} from signal (#{sig})")
 
           # allow our shutdown logic (called from a separate thread) to take affect.
+          # TODO: handle that exited pid as shutdown would do it
           break if @shutdown
 
           spawn_replacement_child(pid)

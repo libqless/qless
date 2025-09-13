@@ -77,11 +77,6 @@ RSpec.configure do |c|
   c.include RSpec::Fire
   c.include QlessSpecHelpers
 
-  if ENV['TRAVIS']
-    c.before(:each, :js) do
-      pending 'Skipping JS test because JS tests have been flaky on Travis.'
-    end
-  end
 end
 
 using_integration_context = false

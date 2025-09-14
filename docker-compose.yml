@@ -10,14 +10,13 @@ services:
       retries: 3
 
   shell:
-    image: libqless/dev-shell
+    image: libqless/dev-shell:${RUBY_VERSION:-3.4}
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        RUBY_VERSION: ${RUBY_VERSION:-3.4}
     pull_policy: never
-    volumes:
-      - .:/app
-      - bundle:/usr/local/bundle
     working_dir: /app
     depends_on:
       redis:
@@ -27,6 +26,6 @@ services:
     command: ["bash"]
     stdin_open: true
     tty: true
-
-volumes:
-  bundle:
+    volumes:
+      - .:/app
+      - ./tmp/bundle${RUBY_VERSION:-3.4}:/usr/local/bundle

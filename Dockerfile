@@ -1,4 +1,5 @@
-FROM ruby:3.3.1
+ARG RUBY_VERSION=${RUBY_VERSION:-3.4}
+FROM ruby:${RUBY_VERSION}
 
 RUN apt-get update && apt-get install -y \
     firefox-esr \

@@ -296,8 +296,7 @@ rack apps.
 
 If you wish to run the web interface from the `exe` directory, you
 have the option to run the server as a daemon. Running as a daemon is
-default behavior. To run in the foreground, pass the `--foreground` or
-`-F` flag:
+default behavior.
 
 ```bash
 PATH_TO_QLESS_DIST/exe/qless-web -F

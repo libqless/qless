@@ -1,24 +1,23 @@
 #! /usr/bin/env ruby
 
 $LOAD_PATH.unshift File.expand_path(File.dirname(__FILE__) + '/../lib')
-begin
-  require 'vegas'
-rescue LoadError
-  require 'rubygems'
-  require 'vegas'
-end
-
+require 'optparse'
+require 'rack'
+require 'thin'
 require 'qless/server'
-client = Qless::Client.new
 
-Vegas::Runner.new(Qless::Server.new(client), 'qless-web', {
-                    before_run: lambda { |v|
-                      path = ENV['RESQUECONFIG'] || v.args.first
-                      load path.to_s.strip if path
-                    }
-                  }) do |runner, opts, app|
-  # opts.on('-r redis-connection', "--redis redis-connection", "set the Redis connection string") {|redis_conf|
-  #   runner.logger.info "Using Redis connection '#{redis_conf}'"
-  #   Resque.redis = redis_conf
-  # }
-end
+options = {
+  host: ENV['HOST'] || '0.0.0.0',
+  port: (ENV['PORT'] || 9292).to_i
+}
+
+OptionParser.new do |opts|
+  opts.banner = 'Usage: qless-web [options]'
+  opts.on('-o', '--host HOST', 'Host to bind (default: 0.0.0.0)') { |h| options[:host] = h }
+  opts.on('-p', '--port PORT', Integer, 'Port to listen on (default: 9292)') { |p| options[:port] = p }
+end.parse!
+
+client = Qless::Client.new
+app = Qless::Server.new(client)
+
+Rack::Handler::Thin.run(app, Host: options[:host], Port: options[:port])

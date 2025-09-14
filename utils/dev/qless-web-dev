@@ -1,7 +1,9 @@
 #! /usr/bin/env ruby
 
 $LOAD_PATH.unshift File.expand_path(File.dirname(__FILE__) + '/../lib')
-require 'vegas'
+require 'optparse'
+require 'rack'
+require 'thin'
 require_relative 'qless_web_dev_helper'
 require 'qless/server'
 
@@ -10,6 +12,16 @@ client = Qless::Client.new
 # Create mock data
 QlessWebDevHelper.create_mock_jobs(client)
 
-Vegas::Runner.new(Qless::Server.new(client), 'qless-web', {
-                    foreground: true
-                  })
+options = {
+  host: ENV['HOST'] || '0.0.0.0',
+  port: (ENV['PORT'] || 9292).to_i
+}
+
+OptionParser.new do |opts|
+  opts.banner = 'Usage: qless-web-dev [options]'
+  opts.on('-o', '--host HOST', 'Host to bind (default: 0.0.0.0)') { |h| options[:host] = h }
+  opts.on('-p', '--port PORT', Integer, 'Port to listen on (default: 9292)') { |p| options[:port] = p }
+end.parse!
+
+app = Qless::Server.new(client)
+Rack::Handler::Thin.run(app, Host: options[:host], Port: options[:port])

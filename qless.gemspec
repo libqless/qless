@@ -42,7 +42,6 @@ language-specific extension will also remain up to date.
   s.add_dependency 'rusage', '~> 0.2.0'
   s.add_dependency 'sinatra', ['>= 1.3', '<= 2.2.3']
   s.add_dependency 'statsd-ruby', '~> 1.3'
-  s.add_dependency 'thin', '~> 1.7'
+  s.add_dependency 'thin'
   s.add_dependency 'thor'
-  s.add_dependency 'vegas', '~> 0.1.11'
 end

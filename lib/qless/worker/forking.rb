@@ -29,9 +29,6 @@ module Qless
         @modules = []
 
         @sandbox_mutex = Mutex.new
-        # A queue of blocks that are postponed since we cannot get
-        # @sandbox_mutex in trap handler
-        @postponed_actions_queue = ::Queue.new
       end
 
       # Because we spawn a new worker, we need to apply all the modules that
@@ -52,30 +49,6 @@ module Qless
         worker
       end
 
-      # If @sandbox_mutex is free, execute block immediately.
-      # Otherwise, postpone it until handling is possible
-      def contention_aware_handler(&block)
-        if @sandbox_mutex.try_lock
-          block.call
-          @sandbox_mutex.unlock
-        else
-          @postponed_actions_queue << block
-        end
-      end
-
-      # Process any signals (such as TERM) that could not be processed
-      # immediately due to @sandbox_mutex being in use
-      def process_postponed_actions
-        until @postponed_actions_queue.empty?
-          # It's possible a signal interrupteed us between the empty?
-          # and shift calls, but it could have only added more things
-          # into @postponed_actions_queue
-          block = @postponed_actions_queue.shift(true)
-          @sandbox_mutex.synchronize do
-            block.call
-          end
-        end
-      end
 
       # Register our handling of signals
       def register_signal_handlers
@@ -83,32 +56,31 @@ module Qless
         # to the child processes. It's just that sometimes we want to wait for
         # them and then exit
         trap('TERM') do
-          contention_aware_handler do
-            stop!('TERM', true)
-            exit
-          end
+          Thread.new { handle_shutdown('TERM') }
         end
         trap('INT') do
-          contention_aware_handler do
-            stop!('INT', true)
-            exit
-          end
+          Thread.new { handle_shutdown('INT') }
         end
         safe_trap('HUP') { sighup_handler.call }
         safe_trap('QUIT') do
-          contention_aware_handler do
-            stop!('QUIT', true)
-            exit
-          end
+          Thread.new { handle_shutdown('QUIT') }
         end
         safe_trap('USR1') do
-          contention_aware_handler { stop!('KILL', true) }
+          Thread.new { handle_shutdown('USR1') }
         end
         begin
-          trap('CONT') { stop('CONT', true) }
-          trap('USR2') { stop('USR2', true) }
+          trap('CONT') { stop('CONT') }
+          trap('USR2') { stop('USR2') }
         rescue ArgumentError
           warn 'Signals USR2, and/or CONT not supported.'
+        end
+      end
+
+      # Handle shutdown signals in a dedicated thread to allow proper mutex usage
+      def handle_shutdown(signal)
+        @sandbox_mutex.synchronize do
+          stop!(signal)
+          exit
         end
       end
 
@@ -136,11 +108,14 @@ module Qless
               "Worker process #{pid} died with #{code} from signal (#{sig})")
 
           # allow our shutdown logic (called from a separate thread) to take affect.
-          # TODO: handle that exited pid as shutdown would do it
-          break if @shutdown
+          if @shutdown
+            @sandbox_mutex.synchronize do
+              @sandboxes.delete(pid)
+            end
+            break
+          end
 
           spawn_replacement_child(pid)
-          process_postponed_actions
         rescue SystemCallError => e
           log(:error, "Failed to wait for child process: #{e.inspect}")
           # If we're shutting down, the loop above will exit
@@ -150,12 +125,16 @@ module Qless
 
       # Returns a list of each of the child pids
       def children
-        @sandboxes.keys
+        if @sandbox_mutex.owned?
+          @sandboxes.keys
+        else
+          @sandbox_mutex.synchronize { @sandboxes.keys }
+        end
       end
 
       # Signal all the children
-      def stop(signal = 'QUIT', in_signal_handler = true)
-        log(:warn, "Sending #{signal} to children") unless in_signal_handler
+      def stop(signal = 'QUIT')
+        log(:warn, "Sending #{signal} to children")
         children.each do |pid|
           Process.kill(signal, pid)
         rescue Errno::ESRCH
@@ -164,10 +143,9 @@ module Qless
       end
 
       # Signal all the children and wait for them to exit.
-      # Should only be called when we have the lock on @sandbox_mutex
-      def stop!(signal = 'QUIT', in_signal_handler = true)
-        shutdown(in_signal_handler = in_signal_handler)
-        shutdown_sandboxes(signal, in_signal_handler)
+      def stop!(signal = 'QUIT')
+        shutdown
+        shutdown_sandboxes(signal)
       end
 
       private
@@ -190,42 +168,44 @@ module Qless
 
           # If we're the parent process, save information about the child
           log(:info, "Spawned worker #{cpid}")
-          @sandboxes[cpid] = slot
+          @sandbox_mutex.synchronize do
+            @sandboxes[cpid] = slot
+          end
         end
       end
 
-      # Should only be called when we have a lock on @sandbox_mutex
-      def shutdown_sandboxes(signal, in_signal_handler = true)
-        # First, send the signal
-        stop(signal, in_signal_handler = in_signal_handler)
+      # Shutdown all child processes and wait for them to exit
+      def shutdown_sandboxes(signal)
+        @sandbox_mutex.synchronize do
+          # First, send the signal
+          stop(signal)
 
-        # Wait for each of our children
-        log(:warn, 'Waiting for child processes') unless in_signal_handler
+          # Wait for each of our children
+          log(:warn, 'Waiting for child processes')
 
-        until @sandboxes.empty?
-          begin
-            pid, = Process.wait2(-1, Process::WNOHANG)
-            if pid.nil?
-              sleep 0.01
-              next
+          until @sandboxes.empty?
+            begin
+              pid, = Process.wait2(-1, Process::WNOHANG)
+              if pid.nil?
+                sleep 0.01
+                next
+              end
+              log(:warn, "Child #{pid} stopped")
+              @sandboxes.delete(pid)
+            rescue SystemCallError
+              break
             end
-            log(:warn, "Child #{pid} stopped") unless in_signal_handler
-            @sandboxes.delete(pid)
-          rescue SystemCallError
-            break
           end
-        end
 
-        unless in_signal_handler
           log(:warn, 'All children have stopped')
 
           # If there were any children processes we couldn't wait for, log it
           @sandboxes.keys.each do |cpid|
             log(:warn, "Could not wait for child #{cpid}")
           end
-        end
 
-        @sandboxes.clear
+          @sandboxes.clear
+        end
       end
 
       def spawn_replacement_child(pid)

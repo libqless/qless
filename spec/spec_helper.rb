@@ -7,8 +7,6 @@ rescue LoadError
   Bundler.setup
 end
 
-require 'rspec/fire'
-
 require 'byebug'
 
 module QlessSpecHelpers
@@ -74,9 +72,7 @@ RSpec.configure do |c|
   c.treat_symbols_as_metadata_keys_with_true_values = true
   c.filter_run :f
   c.run_all_when_everything_filtered = true
-  c.include RSpec::Fire
   c.include QlessSpecHelpers
-
 end
 
 using_integration_context = false

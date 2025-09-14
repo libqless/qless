@@ -23,4 +23,5 @@ group :development do
   gem 'simplecov'
   gem 'thin'
   gem 'timecop'
+  gem 'ostruct'
 end

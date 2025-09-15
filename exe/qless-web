@@ -3,7 +3,6 @@
 $LOAD_PATH.unshift File.expand_path(File.dirname(__FILE__) + '/../lib')
 require 'optparse'
 require 'rack'
-require 'thin'
 require 'qless/server'
 
 options = {
@@ -20,4 +19,4 @@ end.parse!
 client = Qless::Client.new
 app = Qless::Server.new(client)
 
-Rack::Handler::Thin.run(app, Host: options[:host], Port: options[:port])
+Rack::Server.start(app: app, Host: options[:host], Port: options[:port])
